@@ -13,7 +13,7 @@ def create_room(db: Session, user_id: UUID, data: RoomIn) -> Room:
         room_name=data.room_name,
     )
     db.add(room)
-    db.flush()  # room.idを確定させる
+    db.flush()  # room.idを使うため、先にDBへ送る
     # 作成者は最初の参加者として登録する
     db.add(RoomUser(room_id=room.id, user_id=user_id))
     db.commit()

@@ -14,7 +14,7 @@ class Room(Base):
     room_create_user: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE")
     )
-    # 使用中のデッキは削除できない(ON DELETE RESTRICT)
+    # ルームが使っているデッキは、削除できない(DBが止める)
     deck_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("decks.id", ondelete="RESTRICT")
     )

@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.models import Deck
 from app.schemas.deck import DeckIn, DeckListOut, DeckOut
 
-# ルーター全体にログイン必須をかけ、認証のつけ忘れを防ぐ
+# 全部のAPIをログイン必須にして、つけ忘れを防ぐ
 router = APIRouter(
     prefix="/deck",
     tags=["decks"],

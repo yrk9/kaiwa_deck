@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.models import Deck, Room
 from app.schemas.room import RoomIn, RoomOut
 
-# ルーター全体にログイン必須をかけ、認証のつけ忘れを防ぐ
+# 全部のAPIをログイン必須にして、つけ忘れを防ぐ
 router = APIRouter(
     prefix="/room",
     tags=["rooms"],

@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.models import Card
 from app.schemas.card import CardIn, CardOut
 
-# ルーター全体にログイン必須をかけ、認証のつけ忘れを防ぐ
+# 全部のAPIをログイン必須にして、つけ忘れを防ぐ
 router = APIRouter(
     prefix="/card",
     tags=["cards"],
