@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 
-from app.routers import cards, deck_cards, decks, rooms
+from app.routers import cards, deck_cards, decks, room_users, rooms
 
 app = FastAPI(title="kaiwa_deck API")
 app.include_router(cards.router)
 app.include_router(decks.router)
 app.include_router(deck_cards.router)
 app.include_router(rooms.router)
+app.include_router(room_users.router)
 
 
 @app.get("/health")
