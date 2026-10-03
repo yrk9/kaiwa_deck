@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Deck, DeckCard
+from app.models import Deck, DeckCard, Room
 from app.schemas.deck import DeckIn
 
 
@@ -32,6 +32,11 @@ def list_decks_with_card_count(
         .order_by(Deck.created_at.desc())
     )
     return list(db.execute(stmt).all())
+
+
+def is_deck_in_use(db: Session, deck_id: UUID) -> bool:
+    stmt = select(Room.id).where(Room.deck_id == deck_id).limit(1)
+    return db.execute(stmt).first() is not None
 
 
 def delete_deck(db: Session, deck: Deck) -> None:

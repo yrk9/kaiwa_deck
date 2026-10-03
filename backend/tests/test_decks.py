@@ -5,6 +5,7 @@
 - デッキには「公開」の仕組みが無いので、参照・更新・削除は作成者本人だけ。
   他人のデッキは403、一覧にも出てこない
 - 一覧のcard_countが、デッキに入っているお題の枚数と一致する
+- ルームが使っているデッキは削除できず409。ルームが無くなれば削除できる
 - 存在しないidは404、空や長すぎる入力は422
 - ログイン(トークン)が無いと、どのルートも401
 
@@ -24,7 +25,7 @@ from app.core.security import get_current_user_id
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app as api
-from app.models import Card, DeckCard
+from app.models import Card, DeckCard, Room
 
 USER_A = uuid.uuid4()
 USER_B = uuid.uuid4()
@@ -113,6 +114,28 @@ def test_owner_can_delete(client):
     deck = create(client).json()
     assert client.delete(f"/deck/{deck['id']}/").status_code == 204
     assert client.get(f"/deck/{deck['id']}/").status_code == 404
+
+
+def test_cannot_delete_deck_used_by_room(client, session_factory):
+    deck = create(client).json()
+    with session_factory() as db:
+        room = Room(
+            room_create_user=USER_A,
+            deck_id=uuid.UUID(deck["id"]),
+            room_name="使用中",
+        )
+        db.add(room)
+        db.commit()
+        room_id = room.id
+
+    assert client.delete(f"/deck/{deck['id']}/").status_code == 409
+    assert client.get(f"/deck/{deck['id']}/").status_code == 200
+
+    # ルームが無くなれば、削除できる
+    with session_factory() as db:
+        db.delete(db.get(Room, room_id))
+        db.commit()
+    assert client.delete(f"/deck/{deck['id']}/").status_code == 204
 
 
 def test_list_decks_returns_only_own(client, session_factory):
