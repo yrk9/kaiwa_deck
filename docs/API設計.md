@@ -7,7 +7,7 @@
 対話しながら固めた設計原則。
 
 - 認証はSupabase Auth(JWT)。**自分自身のuser_idや作成者idはリクエスト引数として渡さず、JWT検証の結果から取得する**(クライアントが他人のidを騙って送れないようにするため)
-- リソースのIDはURLパスに含める(例: `DELETE /deck/{id}`)。中間テーブルの操作も含め、パスの親子構造を統一する
+- リソースのIDはURLパスに含める(例: `DELETE /deck/{id}/`)。中間テーブルの操作も含め、パスの親子構造を統一する
 - **POST/PUTは作成・更新後の中身をレスポンスとして返す**(クライアントがサーバー生成値を知る必要があるため)。**DELETEは204でボディを返さない**
 - 一覧系のAPIは、関連テーブルをJOINして表示に必要な情報を含める(N+1問題を避ける。例: 参加者一覧に`user_name`を含める)
 - 画面の初期表示に複数テーブルの情報が必要な場合は、専用の集約エンドポイントを用意する(例: ルーム入室時の`state`)
@@ -27,15 +27,15 @@
 |---|---|---|---|
 | 自分のデッキ一覧 | `GET /deck/` | なし(JWTから自分のuser_id) | `[{id, create_user_id, deck_name, card_count, created_at, updated_at}, ...]` |
 | デッキ作成 | `POST /deck/` | `デッキ名` | `{id, create_user_id, deck_name, created_at, updated_at}` |
-| デッキ削除 | `DELETE /deck/{id}` | なし | 204 |
+| デッキ削除 | `DELETE /deck/{id}/` | なし | 204 |
 | デッキ参照 | `GET /deck/{id}/` | なし | `{id, create_user_id, deck_name, created_at, updated_at}` |
 
 ## deck_cards(デッキとお題の中間テーブル)
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
-| お題を追加 | `POST /decks/{deck_id}/cards` | `card_id` | `{deck_id, card_id}` |
-| お題を削除 | `DELETE /decks/{deck_id}/cards/{card_id}` | なし | 204 |
+| お題を追加 | `POST /decks/{deck_id}/cards/` | `card_id` | `{deck_id, card_id}` |
+| お題を削除 | `DELETE /decks/{deck_id}/cards/{card_id}/` | なし | 204 |
 
 ## ルーム
 
