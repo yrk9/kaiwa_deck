@@ -7,10 +7,14 @@ from sqlalchemy.orm import Session
 from app.models import Card, DeckCard, Room, RoomDrawnCard
 
 
-def _pick_undrawn_card(db: Session, room: Room) -> Card | None:
-    drawn_ids = select(RoomDrawnCard.card_id).where(
-        RoomDrawnCard.room_id == room.id
+def _drawn_card_ids(room_id: UUID):
+    return select(RoomDrawnCard.card_id).where(
+        RoomDrawnCard.room_id == room_id
     )
+
+
+def _pick_undrawn_card(db: Session, room: Room) -> Card | None:
+    drawn_ids = _drawn_card_ids(room.id)
     stmt = (
         select(Card)
         .join(DeckCard, DeckCard.card_id == Card.id)
@@ -47,6 +51,19 @@ def list_drawn(db: Session, room_id: UUID) -> list[tuple[RoomDrawnCard, Card]]:
         .order_by(RoomDrawnCard.drawn_at)
     )
     return list(db.execute(stmt).all())
+
+
+def count_remaining(db: Session, room: Room) -> int:
+    # デッキのお題のうち、まだ引かれていない枚数
+    stmt = (
+        select(func.count())
+        .select_from(DeckCard)
+        .where(
+            DeckCard.deck_id == room.deck_id,
+            DeckCard.card_id.not_in(_drawn_card_ids(room.id)),
+        )
+    )
+    return db.execute(stmt).scalar_one()
 
 
 def reset_drawn(db: Session, room_id: UUID) -> None:
