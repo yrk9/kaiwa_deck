@@ -34,8 +34,8 @@
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
-| お題を追加 | `POST /decks/{deck_id}/cards/` | `card_id` | `{deck_id, card_id}` |
-| お題を削除 | `DELETE /decks/{deck_id}/cards/{card_id}/` | なし | 204 |
+| お題を追加 | `POST /deck/{deck_id}/cards/` | `card_id` | `{deck_id, card_id}` |
+| お題を削除 | `DELETE /deck/{deck_id}/cards/{card_id}/` | なし | 204 |
 
 ## ルーム
 
@@ -52,7 +52,7 @@
 |---|---|---|---|
 | ルーム参加 | `POST /room/{room_id}/user/` | なし(JWTから自分のuser_id) | `{room_id, user_id, joined_at, last_seen_at}` |
 | 参加者一覧 | `GET /room/{room_id}/user/` | なし | `[{room_id, user_id, user_name, joined_at, last_seen_at}, ...]` |
-| ルーム退出 | `DELETE /room/{room_id}/user/{user_id}` | なし | 204 |
+| ルーム退出 | `DELETE /room/{room_id}/user/{user_id}/` | なし | 204 |
 
 ## お題
 
@@ -74,9 +74,9 @@
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
-| お題を引く | `POST /room/{room_id}/drawn` | なし(サーバー側が未使用のお題からランダムに選ぶ) | `{room_id, card_id, drawn_at, content, description}` |
-| 引かれたお題一覧 | `GET /room/{room_id}/drawn` | なし | `[{room_id, card_id, drawn_at, content, description}, ...]` |
-| 山札をリセット | `DELETE /room/{room_id}/drawn` | なし | 204 |
+| お題を引く | `POST /room/{room_id}/drawn/` | なし(サーバー側が未使用のお題からランダムに選ぶ) | `{room_id, card_id, drawn_at, content, description}` |
+| 引かれたお題一覧 | `GET /room/{room_id}/drawn/` | なし | `[{room_id, card_id, drawn_at, content, description}, ...]` |
+| 山札をリセット | `DELETE /room/{room_id}/drawn/` | なし | 204 |
 
 ## ルーム入室時の集約API
 
@@ -95,7 +95,7 @@ GET /room/{room_id}/state
 
 ## 画面構成
 
-`drawn`はroom単位でのみ記録し「誰が引いたか」を持たない設計にしたため、個人がルームをまたいで引いた履歴を表示する`/history`はPhase 2(`drawn_by`追加時)に送る。MVPでは`GET /room/{room_id}/drawn`をルーム画面内の表示に留める。
+`drawn`はroom単位でのみ記録し「誰が引いたか」を持たない設計にしたため、個人がルームをまたいで引いた履歴を表示する`/history`はPhase 2(`drawn_by`追加時)に送る。MVPでは`GET /room/{room_id}/drawn/`をルーム画面内の表示に留める。
 
 また、「一人で使う」体験も内部的には自分1人だけが参加するルームを自動作成して`drawn`を叩く実装になる(確定APIが`drawn`・`state`とも`room_id`必須のため)。
 
