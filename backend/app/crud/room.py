@@ -1,8 +1,9 @@
 from uuid import UUID
 
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 
-from app.models import Room, RoomUser
+from app.models import Room, RoomDrawnCard, RoomUser
 from app.schemas.room import RoomIn
 
 
@@ -31,6 +32,11 @@ def is_room_member(db: Session, room_id: UUID, user_id: UUID) -> bool:
 
 
 def update_room(db: Session, room: Room, data: RoomIn) -> Room:
+    # デッキを変えたら、前のデッキで引いた記録は消す(同じ保存の中で行う)
+    if room.deck_id != data.deck_id:
+        db.execute(
+            delete(RoomDrawnCard).where(RoomDrawnCard.room_id == room.id)
+        )
     room.deck_id = data.deck_id
     room.room_name = data.room_name
     db.commit()

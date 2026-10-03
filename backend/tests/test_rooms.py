@@ -7,6 +7,8 @@
 - 更新・削除は作成者本人だけ(他人は403、存在しないidは404)
 - 使えるデッキは「ルームの参加者のデッキ」だけ。作成時は自分のデッキのみ、
   更新時は参加者が持つデッキならOK、参加者以外のデッキは403
+- デッキを別のものに変更すると、引いた記録はリセットされる。
+  ルーム名だけの変更では、リセットされない
 - 存在しないデッキは404、入力が不正なら422
 - ログイン(トークン)が無いと、どのルートも401
 
@@ -26,7 +28,7 @@ from app.core.security import get_current_user_id
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app as api
-from app.models import Deck, RoomUser
+from app.models import Deck, RoomDrawnCard, RoomUser
 
 USER_A = uuid.uuid4()
 USER_B = uuid.uuid4()
@@ -77,6 +79,18 @@ def body_for(deck_id, name="懇親会ルーム"):
 
 def create(client, deck_id, name="懇親会ルーム"):
     return client.post("/room/", json=body_for(deck_id, name))
+
+
+def add_drawn(session_factory, room_id):
+    with session_factory() as db:
+        db.add(RoomDrawnCard(room_id=uuid.UUID(room_id), card_id=uuid.uuid4()))
+        db.commit()
+
+
+def drawn_count(session_factory, room_id):
+    with session_factory() as db:
+        query = db.query(RoomDrawnCard).filter_by(room_id=uuid.UUID(room_id))
+        return query.count()
 
 
 def test_create_room(client, make_deck):
@@ -155,6 +169,26 @@ def test_creator_can_update_name_and_deck(client, make_deck):
     assert r.json()["room_name"] == "新しい名前"
     assert r.json()["deck_id"] == str(new_deck_id)
     assert client.get(f"/room/{room['id']}/").json() == r.json()
+
+
+def test_changing_deck_resets_drawn(client, make_deck, session_factory):
+    room = create(client, make_deck(USER_A)).json()
+    add_drawn(session_factory, room["id"])
+
+    new_deck_id = make_deck(USER_A, "別のデッキ")
+    r = client.put(f"/room/{room['id']}/", json=body_for(new_deck_id))
+    assert r.status_code == 200
+    assert drawn_count(session_factory, room["id"]) == 0
+
+
+def test_renaming_room_keeps_drawn(client, make_deck, session_factory):
+    deck_id = make_deck(USER_A)
+    room = create(client, deck_id).json()
+    add_drawn(session_factory, room["id"])
+
+    r = client.put(f"/room/{room['id']}/", json=body_for(deck_id, "改名"))
+    assert r.status_code == 200
+    assert drawn_count(session_factory, room["id"]) == 1
 
 
 def test_update_with_deck_of_another_member(
