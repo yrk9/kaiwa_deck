@@ -58,6 +58,7 @@ def create_room(
 
 @router.get("/{room_id}/", response_model=RoomOut)
 def read_room(room_id: UUID, db: Session = Depends(get_db)):
+    # 作成者でなくても見られる(リンクで人を誘うため)
     return _get_room_or_404(db, room_id)
 
 

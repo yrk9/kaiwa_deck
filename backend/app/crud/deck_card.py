@@ -12,6 +12,7 @@ def card_exists(db: Session, card_id: UUID) -> bool:
 def get_deck_card(
     db: Session, deck_id: UUID, card_id: UUID
 ) -> DeckCard | None:
+    # 主キーが2つ(deck_idとcard_id)なので、辞書で指定する
     return db.get(DeckCard, {"deck_id": deck_id, "card_id": card_id})
 
 

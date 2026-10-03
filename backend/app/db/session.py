@@ -9,5 +9,6 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
 
 def get_db():
+    # リクエストごとにセッションを作り、終わったら閉じる
     with SessionLocal() as db:
         yield db

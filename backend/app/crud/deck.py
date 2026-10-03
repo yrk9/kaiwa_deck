@@ -23,6 +23,7 @@ def list_decks_with_card_count(
     db: Session, user_id: UUID
 ) -> list[tuple[Deck, int]]:
     card_count = func.count(DeckCard.card_id)
+    # お題が0枚のデッキも一覧に出すため、outerjoinを使う
     stmt = (
         select(Deck, card_count)
         .outerjoin(DeckCard, DeckCard.deck_id == Deck.id)

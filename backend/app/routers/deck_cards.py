@@ -18,6 +18,7 @@ router = APIRouter(
 )
 
 
+# decks.pyと同じ内容。_付きは内部用なので、共有せずこちらにも置く
 def _get_own_deck(db: Session, deck_id: UUID, user_id: UUID) -> Deck:
     deck = deck_crud.get_deck(db, deck_id)
     if deck is None:
@@ -43,6 +44,7 @@ def add_card(
     _get_own_deck(db, deck_id, user_id)
     if not crud.card_exists(db, body.card_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Card not found")
+    # 同じお題の二重登録は断る
     if crud.get_deck_card(db, deck_id, body.card_id) is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Card is already in this deck"

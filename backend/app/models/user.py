@@ -10,6 +10,7 @@ from app.db.base import Base
 class User(Base):
     __tablename__ = "users"
 
+    # 認証ユーザーと同じid。DBのトリガーが自動で入れる
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
     user_name: Mapped[str]
     mail: Mapped[str | None]

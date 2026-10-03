@@ -18,10 +18,12 @@ class Deck(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+    # 更新するたびに、自動で今の時刻になる
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
+    # デッキを消すと、中のdeck_cardsも一緒に消える
     cards: Mapped[list["DeckCard"]] = relationship(
         back_populates="deck", cascade="all, delete-orphan"
     )

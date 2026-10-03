@@ -35,6 +35,7 @@ def list_decks(
     db: Session = Depends(get_db),
 ):
     rows = crud.list_decks_with_card_count(db, user_id)
+    # card_count(お題の数)を足すため、1件ずつ作り直す
     return [
         DeckListOut(
             id=deck.id,
