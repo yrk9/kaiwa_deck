@@ -26,19 +26,25 @@
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
 | 自分のデッキ一覧 | `GET /deck/` | なし(JWTから自分のuser_id) | `[{id, create_user_id, deck_name, card_count, created_at, updated_at}, ...]` |
-| デッキ作成 | `POST /deck/` | `デッキ名` | `{id, create_user_id, deck_name, created_at, updated_at}` |
+| デッキ作成 | `POST /deck/` | `デッキ名`、(任意)`include_official_cards` | `{id, create_user_id, deck_name, created_at, updated_at}` |
 | デッキ削除 | `DELETE /deck/{id}/` | なし | 204 |
 | デッキ参照 | `GET /deck/{id}/` | なし | `{id, create_user_id, deck_name, created_at, updated_at}` |
 
 - 参照・更新・削除は作成者本人だけ(デッキには公開の仕組みが無いため、参照も含めて本人限定。他人のは403)
 - 使用中(ルームで使われている)のデッキは削除できず、409を返す
+- `include_official_cards`を`true`にすると、公式のお題をすべて入れた状態でデッキが作られる(初めての人が、1回のリクエストで最初のデッキを用意できるように)。省略時は`false`
 
 ## deck_cards(デッキとお題の中間テーブル)
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
+| デッキ内のお題一覧 | `GET /deck/{deck_id}/cards/` | なし | `[{id, create_user_id, content, description}, ...]` |
 | お題を追加 | `POST /deck/{deck_id}/cards/` | `card_id` | `{deck_id, card_id}` |
 | お題を削除 | `DELETE /deck/{deck_id}/cards/{card_id}/` | なし | 204 |
+
+- どれもデッキの持ち主だけ(他人のデッキは403、存在しないデッキは404)。一覧は、内容(`content`)の順
+- 追加できるお題は、**公式のお題と自分で作ったお題だけ**。他人のお題は403(作成者があとから編集・削除しても、他人のデッキに影響しないようにするため)
+- 同じお題を同じデッキに2回追加すると409
 
 ## ルーム
 
@@ -72,6 +78,7 @@
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
+| お題一覧 | `GET /card/` | なし | `[{id, create_user_id, content, description}, ...]` |
 | お題作成 | `POST /card/` | `内容`, `補足` | `{id, create_user_id, content, description}` |
 | お題削除 | `DELETE /card/{id}/` | なし | 204 |
 | お題参照 | `GET /card/{id}/` | なし | `{id, create_user_id, content, description}` |
@@ -81,6 +88,7 @@
 - 参照は、ログインしていれば誰でもできる
 - 更新・削除は**作成者本人だけ**。他人のお題や公式のお題(作成者なし)は403、存在しないidは404
 - 入力の上限は`content`が1〜200文字、`description`が500文字まで(超えると422)
+- 一覧に出るのは、公式のお題と自分のお題だけ(他人のお題は出ない)。公式が先、その中は内容(`content`)の順
 
 ## ルームの進行(引いたお題の記録)
 
@@ -111,6 +119,21 @@ GET /room/{room_id}/state/
     drawn: [{card_id, content, description, drawn_at}, ...]
 }
 ```
+
+## 上限
+
+匿名ログインは誰でもできるため、DBの容量(無料プランは500MB)を守るための目安。超えると409を返す。数字はコードの1か所にまとめ、あとから変えやすくする。同時に操作したときに、1〜2個超えることは許容する。
+
+| 対象 | 上限 | 超えたときの操作 |
+|---|---|---|
+| 1人が作るデッキ | 20 | `POST /deck/` |
+| 1デッキに入るお題 | 300 | `POST /deck/{deck_id}/cards/` |
+| 1人が作るお題 | 200 | `POST /card/` |
+| 1人が作るルーム | 4 | `POST /room/` |
+| 1ルームの参加者 | 50 | `POST /room/{room_id}/user/`(参加済みの人の再入室は対象外) |
+
+- 1デッキに入るお題の300は、公式お題をすべて入れても、自分のお題と合わせて収まる大きさにしている
+- アカウントの量産や大量リクエストへの対策は、バックエンドの外(SupabaseのCAPTCHA、デプロイ時のレート制限)で扱う
 
 ## 画面構成
 
