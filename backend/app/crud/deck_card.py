@@ -2,11 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.models import Card, DeckCard
-
-
-def card_exists(db: Session, card_id: UUID) -> bool:
-    return db.get(Card, card_id) is not None
+from app.models import DeckCard
 
 
 def get_deck_card(

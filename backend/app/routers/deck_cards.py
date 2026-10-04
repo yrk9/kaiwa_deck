@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user_id
+from app.crud import card as card_crud
 from app.crud import deck as deck_crud
 from app.crud import deck_card as crud
 from app.db.session import get_db
@@ -42,8 +43,15 @@ def add_card(
     db: Session = Depends(get_db),
 ):
     _get_own_deck(db, deck_id, user_id)
-    if not crud.card_exists(db, body.card_id):
+    card = card_crud.get_card(db, body.card_id)
+    if card is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Card not found")
+    # 公式(作成者なし)か自分のお題だけ入れられる。他人のお題は、あとから変わりうるため
+    if card.create_user_id not in (None, user_id):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Only official cards or your own cards can be added",
+        )
     # 同じお題の二重登録は断る
     if crud.get_deck_card(db, deck_id, body.card_id) is not None:
         raise HTTPException(

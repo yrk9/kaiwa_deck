@@ -4,6 +4,7 @@
 - 追加(201)・削除(204)がAPI設計どおりの形で動く
 - デッキの持ち主以外は追加・削除できない(403)。これはデッキ自体の
   アクセス制御(test_decks.py)と同じ規約
+- 追加できるのは、公式のお題と自分のお題だけ。他人のお題は403で、デッキにも入らない
 - 存在しないデッキ・存在しないお題を指定すると404
 - 同じお題を同じデッキに2回追加すると409(重複登録はしない)
 - デッキに入っていないお題を削除しようとすると404
@@ -24,7 +25,7 @@ from app.core.security import get_current_user_id
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app as api
-from app.models import Card, Deck
+from app.models import Card, Deck, DeckCard
 
 USER_A = uuid.uuid4()
 USER_B = uuid.uuid4()
@@ -65,6 +66,31 @@ def deck_and_card(session_factory):
         db.add_all([deck, card])
         db.commit()
         return deck.id, card.id
+
+
+def make_card(session_factory, owner_id):
+    with session_factory() as db:
+        card = Card(content="誰かのお題", create_user_id=owner_id)
+        db.add(card)
+        db.commit()
+        return card.id
+
+
+def test_can_add_own_card(client, deck_and_card, session_factory):
+    deck_id, _ = deck_and_card
+    card_id = make_card(session_factory, USER_A)
+    body = {"card_id": str(card_id)}
+    assert client.post(f"/deck/{deck_id}/cards/", json=body).status_code == 201
+
+
+def test_cannot_add_other_users_card(client, deck_and_card, session_factory):
+    deck_id, _ = deck_and_card
+    card_id = make_card(session_factory, USER_B)
+    body = {"card_id": str(card_id)}
+    assert client.post(f"/deck/{deck_id}/cards/", json=body).status_code == 403
+    with session_factory() as db:
+        key = {"deck_id": deck_id, "card_id": card_id}
+        assert db.get(DeckCard, key) is None
 
 
 def test_add_card_to_deck(client, deck_and_card):
