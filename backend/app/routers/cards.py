@@ -34,6 +34,14 @@ def _get_own_card(db: Session, card_id: UUID, user_id: UUID) -> Card:
     return card
 
 
+@router.get("/", response_model=list[CardOut])
+def list_cards(
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    return crud.list_cards(db, user_id)
+
+
 @router.post("/", response_model=CardOut, status_code=status.HTTP_201_CREATED)
 def create_card(
     body: CardIn,
