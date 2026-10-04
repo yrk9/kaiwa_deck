@@ -5,6 +5,8 @@
 - デッキには「公開」の仕組みが無いので、参照・更新・削除は作成者本人だけ。
   他人のデッキは403、一覧にも出てこない
 - 一覧のcard_countが、デッキに入っているお題の枚数と一致する
+- include_official_cards=trueで作ると、公式のお題が全部入る(他人のお題は入らない)。
+  省略・falseなら空のデッキ。真偽値でない値は422
 - ルームが使っているデッキは削除できず409。ルームが無くなれば削除できる
 - 存在しないidは404、空や長すぎる入力は422
 - ログイン(トークン)が無いと、どのルートも401
@@ -82,6 +84,63 @@ def test_create_deck(client):
     ],
 )
 def test_create_deck_rejects_invalid_input(client, body):
+    assert create(client, body).status_code == 422
+
+
+def add_cards(session_factory, official_count):
+    """公式のお題と、他人のお題を1件ずつ入れておく。"""
+    with session_factory() as db:
+        db.add_all([Card(content=f"公式{i}") for i in range(official_count)])
+        db.add(Card(content="他人のお題", create_user_id=USER_B))
+        db.commit()
+
+
+def card_count_of(client, deck_id):
+    decks = client.get("/deck/").json()
+    return next(d["card_count"] for d in decks if d["id"] == deck_id)
+
+
+def test_create_deck_with_official_cards(client, session_factory):
+    add_cards(session_factory, official_count=3)
+    r = create(
+        client, {"deck_name": "公式入り", "include_official_cards": True}
+    )
+    assert r.status_code == 201
+    assert set(r.json()) == {
+        "id",
+        "create_user_id",
+        "deck_name",
+        "created_at",
+        "updated_at",
+    }
+    # 公式の3件だけ入り、他人のお題は入らない
+    assert card_count_of(client, r.json()["id"]) == 3
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param({"deck_name": "x"}, id="omitted"),
+        pytest.param(
+            {"deck_name": "x", "include_official_cards": False}, id="false"
+        ),
+    ],
+)
+def test_create_deck_without_option_is_empty(client, session_factory, body):
+    add_cards(session_factory, official_count=3)
+    r = create(client, body)
+    assert r.status_code == 201
+    assert card_count_of(client, r.json()["id"]) == 0
+
+
+def test_create_deck_with_option_but_no_official_cards(client):
+    r = create(client, {"deck_name": "x", "include_official_cards": True})
+    assert r.status_code == 201
+    assert card_count_of(client, r.json()["id"]) == 0
+
+
+def test_create_deck_rejects_non_boolean_option(client):
+    body = {"deck_name": "x", "include_official_cards": "abc"}
     assert create(client, body).status_code == 422
 
 

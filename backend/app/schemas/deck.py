@@ -8,6 +8,8 @@ class DeckIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     deck_name: str = Field(min_length=1, max_length=100)
+    # trueなら、公式のお題を全部入れた状態でデッキを作る
+    include_official_cards: bool = False
 
 
 class DeckOut(BaseModel):

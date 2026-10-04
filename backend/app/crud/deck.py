@@ -3,13 +3,22 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Deck, DeckCard, Room
+from app.models import Card, Deck, DeckCard, Room
 from app.schemas.deck import DeckIn
 
 
 def create_deck(db: Session, user_id: UUID, data: DeckIn) -> Deck:
     deck = Deck(create_user_id=user_id, deck_name=data.deck_name)
     db.add(deck)
+    db.flush()  # deck.idを使うため、先にDBへ送る
+    if data.include_official_cards:
+        official_ids = list(
+            db.scalars(select(Card.id).where(Card.create_user_id.is_(None)))
+        )
+        db.add_all(
+            DeckCard(deck_id=deck.id, card_id=card_id)
+            for card_id in official_ids
+        )
     db.commit()
     db.refresh(deck)
     return deck
