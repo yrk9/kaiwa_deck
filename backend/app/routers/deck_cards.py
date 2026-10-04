@@ -9,6 +9,7 @@ from app.crud import deck as deck_crud
 from app.crud import deck_card as crud
 from app.db.session import get_db
 from app.models import Deck
+from app.schemas.card import CardOut
 from app.schemas.deck_card import DeckCardIn, DeckCardOut
 
 # デッキに紐づく中間テーブルの操作なので、decks.pyとは別ファイルに分けている
@@ -29,6 +30,16 @@ def _get_own_deck(db: Session, deck_id: UUID, user_id: UUID) -> Deck:
             status.HTTP_403_FORBIDDEN, "Not the owner of this deck"
         )
     return deck
+
+
+@router.get("/{deck_id}/cards/", response_model=list[CardOut])
+def list_cards(
+    deck_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    _get_own_deck(db, deck_id, user_id)
+    return crud.list_cards_in_deck(db, deck_id)
 
 
 @router.post(

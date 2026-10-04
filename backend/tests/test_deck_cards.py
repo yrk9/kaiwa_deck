@@ -1,8 +1,9 @@
 """デッキへのお題の追加・削除(/deck/{deck_id}/cards)のテスト。
 
 確認していること:
+- 一覧は、そのデッキに入っているお題だけが、内容の順で出る(空なら[])
 - 追加(201)・削除(204)がAPI設計どおりの形で動く
-- デッキの持ち主以外は追加・削除できない(403)。これはデッキ自体の
+- デッキの持ち主以外は、一覧・追加・削除ができない(403)。これはデッキ自体の
   アクセス制御(test_decks.py)と同じ規約
 - 追加できるのは、公式のお題と自分のお題だけ。他人のお題は403で、デッキにも入らない
 - 存在しないデッキ・存在しないお題を指定すると404
@@ -74,6 +75,56 @@ def make_card(session_factory, owner_id):
         db.add(card)
         db.commit()
         return card.id
+
+
+def test_list_cards_in_deck(client, deck_and_card, session_factory):
+    deck_id, official_id = deck_and_card
+    own_id = make_card(session_factory, USER_A)
+    for card_id in (official_id, own_id):
+        body = {"card_id": str(card_id)}
+        client.post(f"/deck/{deck_id}/cards/", json=body)
+
+    r = client.get(f"/deck/{deck_id}/cards/")
+    assert r.status_code == 200
+    items = r.json()
+    assert {c["id"] for c in items} == {str(official_id), str(own_id)}
+    assert set(items[0]) == {"id", "create_user_id", "content", "description"}
+    contents = [c["content"] for c in items]
+    assert contents == sorted(contents)
+
+
+def test_list_excludes_cards_of_other_decks(
+    client, deck_and_card, session_factory
+):
+    deck_id, card_id = deck_and_card
+    client.post(f"/deck/{deck_id}/cards/", json={"card_id": str(card_id)})
+    with session_factory() as db:
+        other_deck = Deck(create_user_id=USER_A, deck_name="別のデッキ")
+        other_card = Card(content="別のデッキのお題")
+        db.add_all([other_deck, other_card])
+        db.flush()
+        db.add(DeckCard(deck_id=other_deck.id, card_id=other_card.id))
+        db.commit()
+
+    items = client.get(f"/deck/{deck_id}/cards/").json()
+    assert [c["id"] for c in items] == [str(card_id)]
+
+
+def test_list_is_empty_when_deck_has_no_cards(client, deck_and_card):
+    deck_id, _ = deck_and_card
+    r = client.get(f"/deck/{deck_id}/cards/")
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_other_user_cannot_list_cards(client, deck_and_card):
+    deck_id, _ = deck_and_card
+    login_as(USER_B)
+    assert client.get(f"/deck/{deck_id}/cards/").status_code == 403
+
+
+def test_list_cards_of_unknown_deck_is_404(client):
+    assert client.get(f"/deck/{uuid.uuid4()}/cards/").status_code == 404
 
 
 def test_can_add_own_card(client, deck_and_card, session_factory):
@@ -155,6 +206,7 @@ def test_other_user_cannot_remove_card(client, deck_and_card):
 @pytest.mark.parametrize(
     "method, path",
     [
+        ("get", "/deck/{deck_id}/cards/"),
         ("post", "/deck/{deck_id}/cards/"),
         ("delete", "/deck/{deck_id}/cards/{card_id}/"),
     ],
