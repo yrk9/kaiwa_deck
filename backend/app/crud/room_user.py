@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import RoomUser, User
@@ -22,6 +22,11 @@ def join_room(
     db.commit()
     db.refresh(member)
     return member, is_new
+
+
+def count_members(db: Session, room_id: UUID) -> int:
+    stmt = select(func.count()).where(RoomUser.room_id == room_id)
+    return db.execute(stmt).scalar_one()
 
 
 def get_member(db: Session, room_id: UUID, user_id: UUID) -> RoomUser | None:

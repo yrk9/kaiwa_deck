@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import limits
 from app.core.security import get_current_user_id
 from app.crud import deck as crud
 from app.db.session import get_db
@@ -55,6 +56,8 @@ def create_deck(
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    if crud.count_decks(db, user_id) >= limits.MAX_DECKS_PER_USER:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Deck limit reached")
     return crud.create_deck(db, user_id, body)
 
 

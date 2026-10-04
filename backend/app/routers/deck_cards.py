@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import limits
 from app.core.security import get_current_user_id
 from app.crud import card as card_crud
 from app.crud import deck as deck_crud
@@ -68,6 +69,8 @@ def add_card(
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Card is already in this deck"
         )
+    if crud.count_cards_in_deck(db, deck_id) >= limits.MAX_CARDS_PER_DECK:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Deck is full")
     return crud.add_card_to_deck(db, deck_id, body.card_id)
 
 

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Card, DeckCard
@@ -11,6 +11,11 @@ def get_deck_card(
 ) -> DeckCard | None:
     # 主キーが2つ(deck_idとcard_id)なので、辞書で指定する
     return db.get(DeckCard, {"deck_id": deck_id, "card_id": card_id})
+
+
+def count_cards_in_deck(db: Session, deck_id: UUID) -> int:
+    stmt = select(func.count()).where(DeckCard.deck_id == deck_id)
+    return db.execute(stmt).scalar_one()
 
 
 def list_cards_in_deck(db: Session, deck_id: UUID) -> list[Card]:

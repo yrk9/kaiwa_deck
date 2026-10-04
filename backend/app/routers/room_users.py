@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
+from app.core import limits
 from app.core.security import get_current_user_id
 from app.crud import room as room_crud
 from app.crud import room_user as crud
@@ -37,6 +38,11 @@ def join_room(
     db: Session = Depends(get_db),
 ):
     _get_room_or_404(db, room_id)
+    # 満員でも、参加済みの人の再入室は通す
+    is_member = crud.get_member(db, room_id, user_id) is not None
+    full = crud.count_members(db, room_id) >= limits.MAX_USERS_PER_ROOM
+    if full and not is_member:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Room is full")
     member, is_new = crud.join_room(db, room_id, user_id)
     if not is_new:
         # 再入室は何も作っていないので、201ではなく200にする

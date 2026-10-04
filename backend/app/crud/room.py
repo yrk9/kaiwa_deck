@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Room, RoomDrawnCard, RoomUser
@@ -20,6 +20,11 @@ def create_room(db: Session, user_id: UUID, data: RoomIn) -> Room:
     db.commit()
     db.refresh(room)
     return room
+
+
+def count_rooms_created_by(db: Session, user_id: UUID) -> int:
+    stmt = select(func.count()).where(Room.room_create_user == user_id)
+    return db.execute(stmt).scalar_one()
 
 
 def get_room(db: Session, room_id: UUID) -> Room | None:

@@ -24,6 +24,11 @@ def create_deck(db: Session, user_id: UUID, data: DeckIn) -> Deck:
     return deck
 
 
+def count_decks(db: Session, user_id: UUID) -> int:
+    stmt = select(func.count()).where(Deck.create_user_id == user_id)
+    return db.execute(stmt).scalar_one()
+
+
 def get_deck(db: Session, deck_id: UUID) -> Deck | None:
     return db.get(Deck, deck_id)
 

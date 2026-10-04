@@ -1,0 +1,7 @@
+"""1人あたりの上限。決めた理由は docs/API設計.md の「上限」を参照。"""
+
+MAX_DECKS_PER_USER = 20
+MAX_CARDS_PER_DECK = 300
+MAX_CARDS_PER_USER = 200
+MAX_ROOMS_PER_USER = 4
+MAX_USERS_PER_ROOM = 50

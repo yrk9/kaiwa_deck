@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import limits
 from app.core.security import get_current_user_id
 from app.crud import card as crud
 from app.db.session import get_db
@@ -48,6 +49,8 @@ def create_card(
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
+    if crud.count_cards_by_user(db, user_id) >= limits.MAX_CARDS_PER_USER:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Card limit reached")
     return crud.create_card(db, user_id, body)
 
 

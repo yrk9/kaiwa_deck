@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import Card
@@ -17,6 +17,11 @@ def create_card(db: Session, user_id: UUID, data: CardIn) -> Card:
     db.commit()
     db.refresh(card)
     return card
+
+
+def count_cards_by_user(db: Session, user_id: UUID) -> int:
+    stmt = select(func.count()).where(Card.create_user_id == user_id)
+    return db.execute(stmt).scalar_one()
 
 
 def get_card(db: Session, card_id: UUID) -> Card | None:

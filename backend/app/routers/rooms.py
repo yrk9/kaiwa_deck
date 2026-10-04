@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core import limits
 from app.core.security import get_current_user_id
 from app.crud import deck as deck_crud
 from app.crud import room as crud
@@ -53,6 +54,8 @@ def create_room(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Deck is not owned by a room member"
         )
+    if crud.count_rooms_created_by(db, user_id) >= limits.MAX_ROOMS_PER_USER:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Room limit reached")
     return crud.create_room(db, user_id, body)
 
 
