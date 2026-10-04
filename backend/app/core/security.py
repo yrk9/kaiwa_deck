@@ -11,7 +11,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# FastAPIの既定エラー(バージョンで401/403が変わる)に頼らず自前で401を返す
+# 未ログイン時、FastAPIまかせだと401か403か不安定なので、自分で401を返す
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
@@ -22,7 +22,7 @@ def _jwks_client() -> PyJWKClient:
 
 
 def verify_access_token(token: str) -> UUID:
-    # トークンのiss等を信用してJWKSの取得先を決めてはならない。取得先は設定値(SUPABASE_URL)に固定する
+    # 公開鍵の取得先は、トークンの中身を信用せず、設定(SUPABASE_URL)で決める
     signing_key = _jwks_client().get_signing_key_from_jwt(token)
     payload = jwt.decode(
         token,
@@ -48,6 +48,6 @@ def get_current_user_id(
     try:
         return verify_access_token(credentials.credentials)
     except (jwt.PyJWTError, ValueError) as e:
-        # 不正トークンと設定ミス(SUPABASE_URL誤り等)がどちらも401になるため、原因をログに残す
+        # 401だけでは原因が分からないので、ログに残す
         logger.warning("JWT verification failed: %s: %s", type(e).__name__, e)
         raise unauthorized
