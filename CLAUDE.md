@@ -23,7 +23,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクトの状態
 
-**実装初期。** 設計は`docs/`に揃っており、開発環境(Docker Compose)・Supabaseスキーマ・JWT検証まで完成している。お題/デッキ/ルーム等の業務ロジック(CRUD・drawn・WebSocket)とフロントの画面はこれから。順序は末尾の「実装順序」を参照。
+**バックエンドのREST API(M7)と、フロントの土台(ゲスト認証、API呼び出し、データ取得のhooks)まで完成。** 残りは、フロントの画面(M8のUI)、ルーム画面とひとりで引く体験(M9)、WebSocketによるリアルタイム共有(M10)、デプロイ(M12)。現在の位置は、末尾の「実装順序」を参照。
+
+未実装のAPI: ユーザーAPI(`/user/{id}/`、`docs/API設計.md`にはあるがMVPの画面では使わない)、WebSocket。
 
 ## コマンド
 
@@ -41,6 +43,7 @@ docker compose exec backend python -m pytest tests/test_security.py::test_valid_
 docker compose exec backend sh -c "pip install -q -r requirements-dev.txt && python -m pycodestyle app tests"
 
 docker compose exec frontend npm run lint
+docker compose exec frontend npx tsc --noEmit    # 型チェック
 ```
 
 `backend/.env`・`frontend/.env.local`は`.gitignore`対象で、雛形は`*.example`。環境構築で詰まりやすい点(Git Bash/WSL/Docker Desktopのパス・統合の問題、Supabase接続文字列のIPv6問題など)は`docs/苦労話.md`にまとめてある。
@@ -49,15 +52,15 @@ docker compose exec frontend npm run lint
 
 「kaiwa_deck(会話デッキ)」は、TCG(トレーディングカードゲーム)の「デッキから1枚引く」というメタファーを応用したアイスブレイク用Webアプリ。よく知らない相手(就活・懇親会での相手、顔見知りだが話したことのない人、オンライン初対面)との会話のきっかけを、「お題カードを引く」というゲーム的な行為で作る。想定用途は2つ: ①事前に一人でデッキを準備する、②その場で複数人が同じ「ルーム」でリアルタイムに同期して引く。背景と検証の詳細は`docs/課題とペルソナ.md`を参照。
 
-## アーキテクチャ(設計済み、未実装)
+## アーキテクチャ
 
 各判断の詳しい理由は`docs/技術選定.md`を参照。将来のセッションが尊重すべき要点:
 
-- **フロントエンド**: Next.js(App Router) + TypeScript + Tailwind + shadcn/ui + Framer Motion、`frontend/`に配置
+- **フロントエンド**: Next.js(App Router) + TypeScript + Tailwind + shadcn/ui + Framer Motion、`frontend/`に配置。構成は`docs/frontend/ディレクトリ構成.md`、ページと遷移は`docs/画面遷移図.md`。APIの呼び出しは、`src/lib/api.ts`の`api()`(認証つき)を使う`src/hooks/`のhooks(TanStack Query)を通す。**APIのパスは末尾に`/`が必要**(無いとリダイレクトされ、ブラウザではCORSで失敗する)
 - **バックエンド**: FastAPI(Python)、`backend/`に配置。このアプリに真の並列処理の必要性はほぼ無いにもかかわらず、Go等ではなくFastAPIを意図的に選んでいる — CRUD/API設計を学ぶことが目的の1つだったため。BaaS完結構成に「簡略化」しないこと
   - REST CRUDは同期SQLAlchemy、WebSocketのルーム進行ロジック(`backend/app/ws/room_manager.py`、未作成)はasyncio + ルーム単位の`asyncio.Lock`で排他制御する、という意図的な使い分け。バックエンド全体を非同期ORMに統一しないこと
 - **認証**: Supabase Auth(匿名認証+アカウント昇格)。バックエンドは認証情報を発行・保存せず、Supabase発行のJWTを検証して`user_id`を取得するだけ(`backend/app/core/security.py`の`get_current_user_id`依存関係)。このプロジェクトのトークンは**ES256(非対称鍵)署名**なので、旧来のHS256共有シークレットではなくJWKS(`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`)の公開鍵で検証する。JWKSの取得先はトークン内の`iss`ではなく設定値`SUPABASE_URL`に固定すること(トークンを信用して取得先を決めない)。**`user_id`や作成者idをリクエスト引数として受け取ってはならない** — 全エンドポイントで検証済みJWTから取得すること。これはAPI設計時に何度も指摘された規約で、ハンドラをコピペする際に混入しやすい退行なので特に注意
-- **DB**: Supabase Postgres。スキーマは`supabase/migrations/`(未作成)配下の生SQLを唯一の正とする — **Alembicは導入しない**。`backend/app/models/`のSQLAlchemyモデルはこのスキーマに追従する手書きの写像であり、スキーマの発生源ではない
+- **DB**: Supabase Postgres。スキーマは`supabase/migrations/`配下の生SQL(`0001_init.sql`)を唯一の正とする — **Alembicは導入しない**。`backend/app/models/`のSQLAlchemyモデルはこのスキーマに追従する手書きの写像であり、スキーマの発生源ではない
 - **ホスティング方針**: Vercel(フロント) + Google Cloud Run(`min-instance=0`、バックエンド) + Supabase(DB/Auth)。無料/低コスト運用を狙った構成で、これには実装上の重要な帰結がある: Cloud Runインスタンスはリクエスト間でゼロにスケールダウンしうるため、**ゲーム/ルームの状態はバックエンドのプロセスメモリではなくDBに永続化する**こと
 - **ローカル開発**: Docker Compose(ローカルへのNode.js/Python個別インストールは前提としない)。`frontend`・`backend`の2サービスのみで、ローカルPostgresコンテナは無い(DBはクラウドのSupabaseプロジェクト)。frontendのベースイメージはNode 22 — `@supabase/supabase-js`がNode 20ではネイティブWebSocket未対応で`createClient()`時にクラッシュするため、下げないこと。backendのDB接続はSupabaseの**Shared pooler**を使う(Direct connectionはIPv6専用でコンテナから届かない)
 
@@ -82,4 +85,8 @@ docker compose exec frontend npm run lint
 
 ## 実装順序
 
-`docs/開発計画.md`にフェーズ分けされたMVPの内訳がある。想定している実装順序(直前の計画セッションより): DBスキーマ → JWT検証ミドルウェア → お題CRUD → デッキCRUD/deck_cards → ルーム/room_users → drawn・state系エンドポイント → フロント結合 → ソロドロー体験 → WebSocketリアルタイム層(引くロジックのバグと同期のバグを同時にデバッグしないよう、意図的に最後に回す)。
+`docs/開発計画.md`にフェーズ分けされたMVPの内訳がある。進み具合:
+
+- **完了**: DBスキーマ → JWT検証 → お題CRUD → デッキCRUD/deck_cards → ルーム/room_users → drawn・state → 上限・CORS → フロントの土台(認証、API呼び出し、hooks)
+- **いまここ: M8のUI**(LP、`/decks`、`/decks/[id]`)。人間が実装中
+- **次**: M9(ルームのhooksはClaude、`/room/new`・`/room/[id]`・ひとりで引く・めくり演出は人間)→ M10(WebSocketのリアルタイム共有。引くロジックのバグと同期のバグを同時にデバッグしないよう、意図的に最後に回した)→ M11(仕上げ)→ M12(デプロイ。本番の`CORS_ORIGINS`、レート制限、会話に出たシークレット(DBパスワード、旧JWT Secret)の再発行)
