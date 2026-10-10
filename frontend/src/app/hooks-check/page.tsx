@@ -1,8 +1,21 @@
 "use client";
 
-// 一時的な動作確認用のページ。確認が終わったら削除する(コミットしない)
+// 一時的な動作確認用のページ。確認が終わったら削除する
 import { useAuth } from "@/hooks/useAuth";
+import {
+  useAddCardToDeck,
+  useDeckCards,
+  useRemoveCardFromDeck,
+} from "@/hooks/useDeckCards";
 import { useCreateDeck, useDecks, useDeleteDeck } from "@/hooks/useDecks";
+import { ApiError } from "@/lib/api";
+
+function describe(error: Error | null | undefined) {
+  if (!error) return "";
+  return error instanceof ApiError
+    ? `${error.status}: ${error.message}`
+    : error.message;
+}
 
 export default function HooksCheck() {
   const auth = useAuth();
@@ -10,21 +23,33 @@ export default function HooksCheck() {
   const create = useCreateDeck();
   const remove = useDeleteDeck();
 
-  const error =
-    decks.error?.message ?? create.error?.message ?? remove.error?.message;
+  const official = decks.data?.find((d) => d.deck_name === "official");
+  const empty = decks.data?.find((d) => d.deck_name === "empty");
+  const officialCards = useDeckCards(official?.id);
+  const emptyCards = useDeckCards(empty?.id);
+  const add = useAddCardToDeck(empty?.id ?? "");
+  const removeCard = useRemoveCardFromDeck(empty?.id ?? "");
+
+  const firstOfficialCard = officialCards.data?.[0];
 
   return (
     <main style={{ padding: 16 }}>
       <p id="auth">
         {auth.status} {auth.status === "ready" ? auth.userId : ""}
       </p>
-      <p id="list-status">{decks.status}</p>
       <pre id="list">
         {JSON.stringify(
           decks.data?.map((d) => ({ name: d.deck_name, n: d.card_count })),
         )}
       </pre>
-      <p id="error">{error ?? ""}</p>
+      <p id="empty-cards">{emptyCards.data?.length ?? "none"}</p>
+      <p id="official-cards">{officialCards.data?.length ?? "none"}</p>
+      <p id="deck-error">
+        {describe(create.error) || describe(remove.error)}
+      </p>
+      <p id="add-error">{describe(add.error)}</p>
+      <p id="remove-error">{describe(removeCard.error)}</p>
+
       <button
         id="create-official"
         onClick={() =>
@@ -39,17 +64,29 @@ export default function HooksCheck() {
       >
         create empty
       </button>
-      <button id="create-bad" onClick={() => create.mutate({ deck_name: "" })}>
-        create bad
-      </button>
       <button
-        id="delete-first"
+        id="add-first"
         onClick={() => {
-          const first = decks.data?.[0];
-          if (first) remove.mutate(first.id);
+          if (firstOfficialCard) add.mutate(firstOfficialCard.id);
         }}
       >
-        delete first
+        add first official card to empty
+      </button>
+      <button
+        id="remove-first"
+        onClick={() => {
+          if (firstOfficialCard) removeCard.mutate(firstOfficialCard.id);
+        }}
+      >
+        remove it from empty
+      </button>
+      <button
+        id="delete-empty"
+        onClick={() => {
+          if (empty) remove.mutate(empty.id);
+        }}
+      >
+        delete empty deck
       </button>
     </main>
   );
