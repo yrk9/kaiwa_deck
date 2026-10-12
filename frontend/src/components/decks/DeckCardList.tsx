@@ -4,6 +4,7 @@ import { useDeck } from "@/hooks/useDecks";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
+import { CardPicker } from "@/components/decks/CardPicker";
 
 export function DeckCardList() {
   const { id } = useParams<{ id: string }>();
@@ -106,6 +107,9 @@ export function DeckCardList() {
         </ul>
       )}
       {isRemoveError && errorRemoveMessage}
+      <h2>お題を追加</h2>
+      <CardPicker></CardPicker>
+
       <Button onClick={() => router.push("/decks")}>デッキ一覧に戻る</Button>
     </div>
   );
