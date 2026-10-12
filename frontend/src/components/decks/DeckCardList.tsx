@@ -6,9 +6,16 @@ import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
 import { CardPicker } from "@/components/decks/CardPicker";
 import { CardForm } from "@/components/decks/CardForm";
+import { useCreateRoom } from "@/hooks/useRooms";
 
 export function DeckCardList() {
   const { id } = useParams<{ id: string }>();
+  const {
+    mutate: mutateRoom,
+    isPending: isRoomPending,
+    isError: isRoomError,
+  } = useCreateRoom();
+
   const {
     data: deckCardData,
     isPending: isDeckCardPending,
@@ -87,6 +94,21 @@ export function DeckCardList() {
   return (
     <div>
       <h1 className="text-4xl py-2">{deckData.deck_name}</h1>
+      {}
+      <Button
+        onClick={() =>
+          mutateRoom(
+            { deck_id: id, room_name: "ひとりで引く" },
+            { onSuccess: (newRoom) => router.push(`/room/${newRoom.id}`) },
+          )
+        }
+        disabled={isRoomPending || deckCardData.length === 0}
+      >
+        ひとりで引く
+      </Button>
+      {isRoomError &&
+        "ルームを作成できませんでした。時間をおいて再度お試しください"}
+
       {deckCardData.length === 0 ? (
         <div>お題がまだありません。追加してみましょう。</div>
       ) : (

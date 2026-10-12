@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクトの状態
 
-**バックエンドのREST API(M7)と、フロントの土台(ゲスト認証、API呼び出し、データ取得のhooks)まで完成。** 残りは、フロントの画面(M8のUI)、ルーム画面とひとりで引く体験(M9)、WebSocketによるリアルタイム共有(M10)、デプロイ(M12)。現在の位置は、末尾の「実装順序」を参照。
+**バックエンドのREST API(M7)、M8の画面(LP、`/decks`、`/decks/[id]`)、ルームのhooks(`hooks/useRooms.ts`、`hooks/useRoomState.ts`)まで完成。** 締め切りが近いため、先に「ひとりで引く」だけを仕上げて公開する(人間が決めた)。複数人で使う部分(`/room/new`、「参加する」画面、招待リンク、WebSocketによるリアルタイム共有)は、その後に回す。現在の位置は、末尾の「実装順序」を参照。
 
 未実装のAPI: ユーザーAPI(`/user/{id}/`、`docs/API設計.md`にはあるがMVPの画面では使わない)、WebSocket。
 
@@ -87,6 +87,7 @@ docker compose exec frontend npx tsc --noEmit    # 型チェック
 
 `docs/開発計画.md`にフェーズ分けされたMVPの内訳がある。進み具合:
 
-- **完了**: DBスキーマ → JWT検証 → お題CRUD → デッキCRUD/deck_cards → ルーム/room_users → drawn・state → 上限・CORS → フロントの土台(認証、API呼び出し、hooks)
-- **いまここ: M8のUI**(LP、`/decks`、`/decks/[id]`)。人間が実装中
-- **次**: M9(ルームのhooksはClaude、`/room/new`・`/room/[id]`・ひとりで引く・めくり演出は人間)→ M10(WebSocketのリアルタイム共有。引くロジックのバグと同期のバグを同時にデバッグしないよう、意図的に最後に回した)→ M11(仕上げ)→ M12(デプロイ。本番の`CORS_ORIGINS`、レート制限、会話に出たシークレット(DBパスワード、旧JWT Secret)の再発行)
+- **完了**: DBスキーマ → JWT検証 → お題CRUD → デッキCRUD/deck_cards → ルーム/room_users → drawn・state → 上限・CORS → フロントの土台(認証、API呼び出し、hooks)→ M8のUI(LP、`/decks`、`/decks/[id]`)→ ルームのhooks
+- **いまここ: M9のうち「ひとりで引く」**(`/decks/[id]`の「ひとりで引く」ボタン、`/room/[id]`のドロー画面)。人間が実装中
+- **次**: M11(めくり演出、見た目の仕上げ)→ M12(デプロイ。本番の`CORS_ORIGINS`、レート制限、会話に出たシークレット(DBパスワード、旧JWT Secret)の再発行)
+- **公開のあと**: M9の残り(`/room/new`、「参加する」画面、招待リンク、参加者の表示)→ M10(WebSocketのリアルタイム共有。引くロジックのバグと同期のバグを同時にデバッグしないよう、意図的に最後に回した)
