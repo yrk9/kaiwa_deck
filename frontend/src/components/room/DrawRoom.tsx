@@ -4,6 +4,8 @@ import { useDrawCard, useResetDrawn, useRoomState } from "@/hooks/useRoomState";
 import { useParams, useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { TopicCard } from "@/components/TopicCard";
+import { TopicCardBack } from "@/components/TopicCard";
 
 export function DrawRoom() {
   const { id } = useParams<{ id: string }>();
@@ -96,12 +98,12 @@ export function DrawRoom() {
       <div>
         引いたお題
         {latestCard !== undefined ? (
-          <div>
-            <div>タイトル: {latestCard.content}</div>
-            <div>説明: {latestCard.description && latestCard.description}</div>
-          </div>
+          <TopicCard
+            content={latestCard.content}
+            description={latestCard.description}
+          />
         ) : (
-          <div>まだお題が引かれていません</div>
+          <TopicCardBack />
         )}
       </div>
 
