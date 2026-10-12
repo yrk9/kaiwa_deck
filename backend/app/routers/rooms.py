@@ -54,8 +54,10 @@ def create_room(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Deck is not owned by a room member"
         )
+    # 上限のときは409にせず、いちばん古いルームを消して空ける
+    # (「ひとりで引く」のたびにルームが増え、一覧が無いので自分では消せないため)
     if crud.count_rooms_created_by(db, user_id) >= limits.MAX_ROOMS_PER_USER:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Room limit reached")
+        crud.delete_oldest_room_created_by(db, user_id)
     return crud.create_room(db, user_id, body)
 
 
