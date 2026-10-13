@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 
 // カードの大きさと形。表と裏で同じにする(めくったときにずれないように)
-const cardShape = "aspect-[5/7] w-64 rounded-2xl shadow-lg";
+const cardShape = "aspect-[7/5] w-64 rounded-2xl shadow-lg";
 
 // 文字が多いお題でもカードに収まるよう、長さで文字の大きさを変える
 function contentSize(content: string) {
-  if (content.length <= 30) return "text-xl";
-  if (content.length <= 80) return "text-base";
-  return "text-sm";
+  if (content.length <= 30) return "text-sm";
+  if (content.length <= 80) return "text-xs";
+  return "text-xs";
 }
 
 type TopicCardProps = {

@@ -115,7 +115,21 @@ export function DeckCardList() {
         >
           ひとりで引く
         </Button>
-        <Button>お題を追加</Button>
+        <Dialog>
+          <DialogTrigger render={<Button />}>お題を追加</DialogTrigger>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>お題を追加</DialogTitle>
+              <DialogDescription>
+                公式のお題と、自分で作ったお題から選べます
+              </DialogDescription>
+            </DialogHeader>
+            {/* お題が多いので、一覧だけをスクロールさせる */}
+            <div className="max-h-[60vh] overflow-y-auto">
+              <CardPicker />
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog>
           {/* render で渡すと、ボタンの中にボタンが入らない */}
@@ -138,10 +152,10 @@ export function DeckCardList() {
       {deckCardData.length === 0 ? (
         <div>お題がまだありません。追加してみましょう。</div>
       ) : (
-        <ul className="grid grid-cols-2 gap-2">
+        <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {deckCardData.map((card) => {
             return (
-              <li key={card.id} className="flex flex-row relative">
+              <li key={card.id} className="relative  max-w-80">
                 <TopicCard
                   content={card.content}
                   description={card.description}
@@ -163,9 +177,6 @@ export function DeckCardList() {
         </ul>
       )}
       {isRemoveError && errorRemoveMessage}
-      <h2>お題を追加</h2>
-      <CardPicker></CardPicker>
-      <Button onClick={() => router.push("/decks")}>デッキ一覧に戻る</Button>
     </div>
   );
 }
