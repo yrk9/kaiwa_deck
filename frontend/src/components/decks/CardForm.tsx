@@ -2,12 +2,15 @@
 import { useCreateCard } from "@/hooks/useCards";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
 
 export function CardForm() {
   const [content, setContent] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const { mutate, isPending, isError, error } = useCreateCard();
+  const { mutate, isPending, isError, isSuccess, error } = useCreateCard();
   let errorMessage;
 
   if (error instanceof ApiError && error.status === 409) {
@@ -33,37 +36,46 @@ export function CardForm() {
 
   return (
     <div>
-      <form onSubmit={handleSubmit} className="flex flex-col">
-        <label>
-          お題の内容
-          <input
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Label>
+          <span className="w-18 shrink-0">内容</span>
+          <Input
             name="content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             maxLength={200}
-            className="border border-gray-600"
-          ></input>
-        </label>
-        <label>
-          説明
-          <input
+            placeholder="最近ハマってることは?"
+            className="flex-1"
+          />
+        </Label>
+        {/* 入力欄が複数行なので、文字は上に揃える */}
+        <Label className="items-start">
+          <span className="w-18 shrink-0 pt-2">説明(任意)</span>
+          <Textarea
             name="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             maxLength={500}
-            className="border border-gray-600"
-          ></input>
-        </label>
+            placeholder="補足事項"
+            className="max-h-40 flex-1"
+          />
+        </Label>
 
         <Button
           type="submit"
           disabled={isPending || content.trim() === ""}
-          className="mx-auto"
+          className="w-full"
         >
           {isPending ? "作成中" : "作成する"}
         </Button>
       </form>
       {isError && errorMessage}
+      {/* 次のお題を入力し始めたら消す */}
+      {isSuccess && content === "" && (
+        <p role="status" className="pt-2 text-sm text-muted-foreground">
+          お題を作成しました
+        </p>
+      )}
     </div>
   );
 }

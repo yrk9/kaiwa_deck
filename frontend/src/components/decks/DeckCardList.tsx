@@ -3,6 +3,14 @@ import { useDeckCards, useRemoveCardFromDeck } from "@/hooks/useDeckCards";
 import { useDeck } from "@/hooks/useDecks";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api";
 import { CardPicker } from "@/components/decks/CardPicker";
 import { CardForm } from "@/components/decks/CardForm";
@@ -109,7 +117,19 @@ export function DeckCardList() {
         </Button>
         <Button>お題を追加</Button>
 
-        <Button>お題を作る</Button>
+        <Dialog>
+          {/* render で渡すと、ボタンの中にボタンが入らない */}
+          <DialogTrigger render={<Button />}>お題を作る</DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>お題を作る</DialogTitle>
+              <DialogDescription>
+                作ったお題は、「お題を追加」からデッキに入れられます
+              </DialogDescription>
+            </DialogHeader>
+            <CardForm />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {isRoomError &&
@@ -145,8 +165,6 @@ export function DeckCardList() {
       {isRemoveError && errorRemoveMessage}
       <h2>お題を追加</h2>
       <CardPicker></CardPicker>
-      <h2>お題を作る</h2>
-      <CardForm></CardForm>
       <Button onClick={() => router.push("/decks")}>デッキ一覧に戻る</Button>
     </div>
   );
