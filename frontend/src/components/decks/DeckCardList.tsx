@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api";
 import { CardPicker } from "@/components/decks/CardPicker";
 import { CardForm } from "@/components/decks/CardForm";
 import { useCreateRoom } from "@/hooks/useRooms";
+import { TopicCard } from "@/components/TopicCard";
 
 export function DeckCardList() {
   const { id } = useParams<{ id: string }>();
@@ -94,36 +95,48 @@ export function DeckCardList() {
   return (
     <div>
       <h1 className="text-4xl py-2">{deckData.deck_name}</h1>
-      {}
-      <Button
-        onClick={() =>
-          mutateRoom(
-            { deck_id: id, room_name: "ひとりで引く" },
-            { onSuccess: (newRoom) => router.push(`/room/${newRoom.id}`) },
-          )
-        }
-        disabled={isRoomPending || deckCardData.length === 0}
-      >
-        ひとりで引く
-      </Button>
+      <div className="flex flex-row gap-2 pb-4">
+        <Button
+          onClick={() =>
+            mutateRoom(
+              { deck_id: id, room_name: "ひとりで引く" },
+              { onSuccess: (newRoom) => router.push(`/room/${newRoom.id}`) },
+            )
+          }
+          disabled={isRoomPending || deckCardData.length === 0}
+        >
+          ひとりで引く
+        </Button>
+        <Button>お題を追加</Button>
+
+        <Button>お題を作る</Button>
+      </div>
+
       {isRoomError &&
         "ルームを作成できませんでした。時間をおいて再度お試しください"}
 
       {deckCardData.length === 0 ? (
         <div>お題がまだありません。追加してみましょう。</div>
       ) : (
-        <ul>
+        <ul className="grid grid-cols-2 gap-2">
           {deckCardData.map((card) => {
             return (
-              <li key={card.id}>
-                {card.content}
-                {card.description && "説明:" + card.description}
-                <Button
-                  onClick={() => handleDeleteButton(card.id)}
-                  disabled={isRemoving}
-                >
-                  お題を外す
-                </Button>
+              <li key={card.id} className="flex flex-row relative">
+                <TopicCard
+                  content={card.content}
+                  description={card.description}
+                  className="w-full"
+                />
+                <div className="absolute top-0 right-0 z-1">
+                  <Button
+                    onClick={() => handleDeleteButton(card.id)}
+                    disabled={isRemoving}
+                    variant="outline"
+                    size={"sm"}
+                  >
+                    外す
+                  </Button>
+                </div>
               </li>
             );
           })}
