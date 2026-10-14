@@ -4,8 +4,7 @@ import { useDrawCard, useResetDrawn, useRoomState } from "@/hooks/useRoomState";
 import { useParams, useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { TopicCard } from "@/components/TopicCard";
-import { TopicCardBack } from "@/components/TopicCard";
+import { TopicCard, TopicCardBack } from "@/components/TopicCard";
 
 export function DrawRoom() {
   const { id } = useParams<{ id: string }>();
@@ -71,9 +70,26 @@ export function DrawRoom() {
   const latestCard = data.drawn.at(-1);
 
   return (
-    <div>
-      <h1>{data.room.room_name}</h1>
+    <div className="flex flex-col items-center mx-auto w-full gap-4 max-w-xl">
+      <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+        <div></div>
+        <h1 className="text-xl font-bold">{data.room.room_name}</h1>
 
+        <Button
+          onClick={handleEndButton}
+          disabled={isLeavePending || isLeaveSuccess}
+          variant="outline"
+          className="justify-self-end"
+          size="sm"
+        >
+          終わる
+        </Button>
+      </div>
+      {isLeaveError && (
+        <div className="text-sm text-destructive">
+          ルームを退出できませんでした。時間をおいてもう一度お試しください
+        </div>
+      )}
       {/* 残り枚数 */}
       <div>残り枚数: {data.remaining_card_count}枚</div>
 
@@ -81,22 +97,8 @@ export function DrawRoom() {
         <div> 山札がなくなりました。リセットすると、もう一度引けます</div>
       )}
 
-      {/* 引いたお題の一覧 */}
-      <h2>これまでに引いたお題</h2>
-      <ul>
-        {data.drawn.map((card) => {
-          return (
-            <li key={card.card_id}>
-              {card.content}
-              {card.description && "説明:" + card.description}
-            </li>
-          );
-        })}
-      </ul>
-
       {/* 引いたお題 */}
-      <div>
-        引いたお題
+      <div className="flex flex-col gap-2">
         {latestCard !== undefined ? (
           <TopicCard
             content={latestCard.content}
@@ -107,12 +109,13 @@ export function DrawRoom() {
         )}
       </div>
 
-      <div className="flex flex-row">
+      <div className="flex flex-col gap-2 w-full max-w-2xs">
         <Button
           onClick={() => {
             mutateDraw();
           }}
           disabled={isDrawPending || data.remaining_card_count === 0}
+          size="lg"
         >
           引く
         </Button>
@@ -121,22 +124,35 @@ export function DrawRoom() {
             mutateReset();
           }}
           disabled={isResetPending || data.drawn.length === 0}
+          variant="outline"
+          size="sm"
         >
           リセット
         </Button>
-        <Button
-          onClick={handleEndButton}
-          disabled={isLeavePending || isLeaveSuccess}
-        >
-          終わる
-        </Button>
       </div>
-      {isDrawError &&
-        "ドローに失敗しました。時間をおいてもう一度お試しください"}
-      {isResetError &&
-        "デッキのリセットに失敗しました。時間をおいてもう一度お試しください"}
-      {isLeaveError &&
-        "ルームを退出できませんでした。時間をおいてもう一度お試しください"}
+      {isDrawError && (
+        <div className="text-sm text-destructive">
+          ドローに失敗しました。時間をおいてもう一度お試しください
+        </div>
+      )}
+      {isResetError && (
+        <div className="text-sm text-destructive">
+          デッキのリセットに失敗しました。時間をおいてもう一度お試しください
+        </div>
+      )}
+
+      {/* 引いたお題の一覧 */}
+      <h2 className="text-sm font-bold">これまでに引いたお題</h2>
+      <ul>
+        {data.drawn.map((card) => {
+          return (
+            <li key={card.card_id} className="py-2 text-base">
+              <p>{card.content}</p>
+              <p>{card.description && "説明:" + card.description}</p>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
