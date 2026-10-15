@@ -27,6 +27,18 @@ def count_rooms_created_by(db: Session, user_id: UUID) -> int:
     return db.execute(stmt).scalar_one()
 
 
+def delete_oldest_room_created_by(db: Session, user_id: UUID) -> None:
+    stmt = (
+        select(Room)
+        .where(Room.room_create_user == user_id)
+        .order_by(Room.created_at)
+        .limit(1)
+    )
+    room = db.execute(stmt).scalar_one_or_none()
+    if room is not None:
+        delete_room(db, room)
+
+
 def get_room(db: Session, room_id: UUID) -> Room | None:
     return db.get(Room, room_id)
 

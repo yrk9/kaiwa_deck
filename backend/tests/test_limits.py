@@ -3,7 +3,8 @@
 確認していること:
 - 上限の数字が、API設計.mdに書いた値になっている
 - 上限までは作れて、超えると409(デッキ、デッキ内のお題、作るお題、
-  作るルーム、ルームの参加者)
+  ルームの参加者)
+- 作るルームだけは409にせず、自分のいちばん古いルームを消して作る
 - 上限は人ごとに数える。他の人の分や、公式のお題、参加しただけのルームは数えない
 - 参加済みの人の再入室は、満員でも通る
 
@@ -12,6 +13,7 @@
 - 同時に操作したときに、少し超えること(ゆるい上限として許容している)
 """
 import uuid
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,7 +26,7 @@ from app.core.security import get_current_user_id
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app as api
-from app.models import Card, Deck
+from app.models import Card, Deck, Room
 
 USER_A = uuid.uuid4()
 USER_B = uuid.uuid4()
@@ -131,7 +133,15 @@ def test_cards_per_user_limit(client, session_factory, monkeypatch):
     assert client.post("/card/", json=body).status_code == 201
 
 
-def test_rooms_per_user_limit(client, session_factory, monkeypatch):
+def set_room_created_at(session_factory, room_id, created_at):
+    with session_factory() as db:
+        db.get(Room, uuid.UUID(room_id)).created_at = created_at
+        db.commit()
+
+
+def test_rooms_per_user_limit_replaces_oldest(
+    client, session_factory, monkeypatch
+):
     monkeypatch.setattr(limits, "MAX_ROOMS_PER_USER", 2)
     deck_a = make_deck(session_factory, USER_A)
     deck_b = make_deck(session_factory, USER_B)
@@ -140,18 +150,27 @@ def test_rooms_per_user_limit(client, session_factory, monkeypatch):
         body = {"deck_id": str(deck_id), "room_name": "部屋"}
         return client.post("/room/", json=body)
 
+    def room_status(room):
+        return client.get(f"/room/{room['id']}/").status_code
+
     # Bが作ったルームに、Aが参加しても、Aの上限には数えない
     login_as(USER_B)
     room_of_b = create_room(deck_b).json()
     login_as(USER_A)
     client.post(f"/room/{room_of_b['id']}/user/")
 
-    assert create_room(deck_a).status_code == 201
-    assert create_room(deck_a).status_code == 201
-    assert create_room(deck_a).status_code == 409
+    first = create_room(deck_a).json()
+    second = create_room(deck_a).json()
+    # 同じ秒に作ると順番が決まらないので、作った日時をずらす
+    set_room_created_at(session_factory, first["id"], datetime(2026, 1, 1))
+    set_room_created_at(session_factory, second["id"], datetime(2026, 1, 2))
 
-    login_as(USER_B)  # Bは自分の2つ目を作れる
-    assert create_room(deck_b).status_code == 201
+    third = create_room(deck_a)
+    assert third.status_code == 201
+    assert room_status(first) == 404  # いちばん古いルームが消える
+    assert room_status(second) == 200
+    assert room_status(third.json()) == 200
+    assert room_status(room_of_b) == 200  # 他の人のルームは消えない
 
 
 def test_room_participants_limit(client, session_factory, monkeypatch):

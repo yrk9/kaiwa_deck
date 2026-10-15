@@ -1,6 +1,8 @@
 services:
   backend:
     build: ./backend
+    # 手元では、コードを変えたら自動で再起動する(Dockerfile は本番用)
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     volumes:
