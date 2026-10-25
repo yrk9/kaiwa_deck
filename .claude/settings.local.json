@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(wsl.exe -d Ubuntu -- bash -c \"cd /home/yorokan2/kaiwa_deck && git status --short && git remote -v && git log --oneline -3 && ls -a backend frontend && cat docker-compose.yml backend/Dockerfile frontend/Dockerfile backend/.env.example frontend/.env.local.example backend/requirements.txt 2>&1\")",
-      "Bash(wsl.exe -d Ubuntu -- bash -c \"cd /home/yorokan2/kaiwa_deck && docker compose run --rm --no-deps -T frontend npx next build 2>&1 | tail -40\")",
-      "Bash(wsl.exe -d Ubuntu -- bash -c \"cd /home/yorokan2/kaiwa_deck && docker build -q -t kaiwa-backend-prodcheck ./backend >/dev/null && docker run -d --rm --name kaiwa-prodcheck --env-file backend/.env -e PORT=8080 -p 18080:8080 kaiwa-backend-prodcheck >/dev/null && sleep 4 && curl -s -o /dev/null -w 'health=%{http_code}\\\\n' http://localhost:18080/health && curl -s -o /dev/null -w 'deck_without_token=%{http_code}\\\\n' http://localhost:18080/deck/ && docker logs kaiwa-prodcheck 2>&1 | tail -5; docker stop kaiwa-prodcheck >/dev/null; docker rmi -f kaiwa-backend-prodcheck >/dev/null; docker compose up -d --build backend 2>&1 | tail -2; sleep 3; curl -s -o /dev/null -w 'dev_health=%{http_code}\\\\n' http://localhost:8000/health; docker compose logs --tail 3 backend\")"
-    ]
-  }
-}
