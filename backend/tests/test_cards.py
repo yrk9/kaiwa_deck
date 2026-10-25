@@ -4,6 +4,7 @@
 - 作成(201)・参照・更新・削除(204)が、API設計どおりの形で動く
 - 一覧には、公式のお題と自分のお題だけが出る(他人のお題は出ない)。
   公式が先で、その中は内容の順
+- 公式のお題は種類(category)を返し、自分のお題の種類はNULL
 - 更新と削除は作成者本人だけ。他人のお題や公式のお題は403
 - 存在しないidは404、空や長すぎる入力は422
 - ログイン(トークン)が無いと、どのルートも401
@@ -114,9 +115,27 @@ def test_list_shows_official_and_own_cards_only(client, session_factory):
     items = r.json()
     # 公式が先で、その中は内容の順。他人のお題は出ない
     assert [c["content"] for c in items] == ["公式A", "公式B", "自分A", "自分B"]
-    assert set(items[0]) == {"id", "create_user_id", "content", "description"}
+    assert set(items[0]) == {
+        "id",
+        "create_user_id",
+        "content",
+        "description",
+        "category",
+    }
     assert items[0]["create_user_id"] is None
     assert items[2]["create_user_id"] == str(USER_A)
+
+
+def test_list_shows_category_of_official_cards(client, session_factory):
+    with session_factory() as db:
+        db.add(Card(content="志望動機は?", category="interview"))
+        db.commit()
+    create(client, {"content": "自分のお題"})
+
+    items = client.get("/card/").json()
+    categories = {c["content"]: c["category"] for c in items}
+    # 公式のお題は種類を持ち、自分で作ったお題は持たない
+    assert categories == {"志望動機は?": "interview", "自分のお題": None}
 
 
 def test_list_is_empty_when_no_cards(client):

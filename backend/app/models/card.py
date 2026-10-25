@@ -16,3 +16,5 @@ class Card(Base):
     )
     content: Mapped[str]
     description: Mapped[str | None]
+    # 公式のお題だけが持つ種類(面接の定番など)。自分のお題はNULL
+    category: Mapped[str | None]

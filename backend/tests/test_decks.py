@@ -7,6 +7,8 @@
 - 一覧のcard_countが、デッキに入っているお題の枚数と一致する
 - include_official_cards=trueで作ると、公式のお題が全部入る(他人のお題は入らない)。
   省略・falseなら空のデッキ。真偽値でない値は422
+- official_categoryを指定すると、その種類の公式のお題だけが入る。
+  知らない種類や、include_official_cardsとの同時の指定は422
 - ルームが使っているデッキは削除できず409。ルームが無くなれば削除できる
 - 存在しないidは404、空や長すぎる入力は422
 - ログイン(トークン)が無いと、どのルートも401
@@ -141,6 +143,46 @@ def test_create_deck_with_option_but_no_official_cards(client):
 
 def test_create_deck_rejects_non_boolean_option(client):
     body = {"deck_name": "x", "include_official_cards": "abc"}
+    assert create(client, body).status_code == 422
+
+
+def test_create_deck_with_official_category(client, session_factory):
+    with session_factory() as db:
+        db.add_all(
+            [
+                Card(content="面接1", category="interview"),
+                Card(content="面接2", category="interview"),
+                Card(content="雑談1", category="small_talk"),
+                Card(content="種類なしの公式"),
+            ]
+        )
+        db.commit()
+    add_cards(session_factory, official_count=0)  # 他人のお題も1件
+
+    body = {"deck_name": "面接練習", "official_category": "interview"}
+    r = create(client, body)
+    assert r.status_code == 201
+    # 面接の2件だけが入る
+    assert card_count_of(client, r.json()["id"]) == 2
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param(
+            {"deck_name": "x", "official_category": "unknown"}, id="unknown"
+        ),
+        pytest.param(
+            {
+                "deck_name": "x",
+                "include_official_cards": True,
+                "official_category": "interview",
+            },
+            id="both-options",
+        ),
+    ],
+)
+def test_create_deck_rejects_invalid_official_category(client, body):
     assert create(client, body).status_code == 422
 
 
