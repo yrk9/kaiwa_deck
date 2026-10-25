@@ -1,38 +1,76 @@
-"""公式のお題(作成者なし)をDBに投入するスクリプト。
+"""公式のお題(作成者なし)を、デッキの種類ごとにDBへ登録するスクリプト。
 
 実行方法: python -m seed.seed_cards
-既に同じcontentの公式カードがあれば、重複登録せずスキップする
-(何度実行しても件数が増えすぎないようにするため)。
+seed/decks/ のファイル名が、お題の種類(category)になる。
+すでに同じ内容の公式のお題があれば、新しく作らずに種類と補足を合わせる
+(何度実行しても、件数が増えないようにするため)。
 """
 import json
 from pathlib import Path
+from typing import get_args
+
+from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal
 from app.models import Card
+from app.schemas.card import CardCategory
 
-DATA_PATH = Path(__file__).parent / "official_cards.json"
+DECKS_DIR = Path(__file__).parent / "decks"
 
 
-def seed_official_cards() -> None:
-    cards = json.loads(DATA_PATH.read_text(encoding="utf-8"))
+def load_decks(decks_dir: Path) -> list[dict]:
+    """すべてのファイルのお題を、種類つきの1つのリストにする。"""
+    cards = []
+    for path in sorted(decks_dir.glob("*.json")):
+        category = path.stem
+        if category not in get_args(CardCategory):
+            raise ValueError(f"unknown category file: {path.name}")
+        for card in json.loads(path.read_text(encoding="utf-8")):
+            cards.append({**card, "category": category})
 
-    with SessionLocal() as db:
-        existing = {
-            content
-            for (content,) in db.query(Card.content).filter(
-                Card.create_user_id.is_(None)
+    # 同じ内容が2つあると、どちらの種類にするか決められない
+    contents = [card["content"] for card in cards]
+    if len(contents) != len(set(contents)):
+        raise ValueError("the same content appears more than once")
+    return cards
+
+
+def seed_official_cards(
+    db: Session, decks_dir: Path = DECKS_DIR
+) -> dict[str, int]:
+    existing = {
+        card.content: card
+        for card in db.query(Card).filter(Card.create_user_id.is_(None))
+    }
+    counts = {"added": 0, "updated": 0, "unchanged": 0}
+    for data in load_decks(decks_dir):
+        content = data["content"]
+        description = data.get("description")
+        category = data["category"]
+        card = existing.get(content)
+        if card is None:
+            db.add(
+                Card(
+                    content=content,
+                    description=description,
+                    category=category,
+                )
             )
-        }
-        added = 0
-        for card in cards:
-            if card["content"] in existing:
-                continue
-            db.add(Card(**card))
-            added += 1
-        db.commit()
+            counts["added"] += 1
+        elif (card.description, card.category) != (description, category):
+            card.description = description
+            card.category = category
+            counts["updated"] += 1
+        else:
+            counts["unchanged"] += 1
+    db.commit()
+    return counts
 
-    print(f"added {added} card(s), skipped {len(cards) - added}")
+
+def main() -> None:
+    with SessionLocal() as db:
+        print(seed_official_cards(db))
 
 
 if __name__ == "__main__":
-    seed_official_cards()
+    main()
