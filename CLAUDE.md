@@ -23,7 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクトの状態
 
-**バックエンドのREST API(M7)、M8の画面(LP、`/decks`、`/decks/[id]`)、ルームのhooks(`hooks/useRooms.ts`、`hooks/useRoomState.ts`)まで完成。** 締め切りが近いため、先に「ひとりで引く」だけを仕上げて公開する(人間が決めた)。複数人で使う部分(`/room/new`、「参加する」画面、招待リンク、WebSocketによるリアルタイム共有)は、その後に回す。現在の位置は、末尾の「実装順序」を参照。
+**「ひとりで引く」まで作って公開済み**(https://kaiwa-deck-app.vercel.app)。そのあと、コンセプトを「就活の会話を1人で声に出して練習する」に見直した(人間が決めた。理由は`docs/課題とペルソナ.md`の「コンセプトの見直し」)。いまは、公式デッキを3種類(面接の定番、逆質問、懇親会の話題)に分ける作業中。複数人で使う部分(`/room/new`、「参加する」画面、招待リンク、WebSocket)は、「友達と模擬面接」として公開の後に回す。現在の位置は、末尾の「実装順序」を参照。
 
 未実装のAPI: ユーザーAPI(`/user/{id}/`、`docs/API設計.md`にはあるがMVPの画面では使わない)、WebSocket。
 
@@ -50,7 +50,7 @@ docker compose exec frontend npx tsc --noEmit    # 型チェック
 
 ## プロジェクト概要
 
-「kaiwa_deck(会話デッキ)」は、TCG(トレーディングカードゲーム)の「デッキから1枚引く」というメタファーを応用したアイスブレイク用Webアプリ。よく知らない相手(就活・懇親会での相手、顔見知りだが話したことのない人、オンライン初対面)との会話のきっかけを、「お題カードを引く」というゲーム的な行為で作る。想定用途は2つ: ①事前に一人でデッキを準備する、②その場で複数人が同じ「ルーム」でリアルタイムに同期して引く。背景と検証の詳細は`docs/課題とペルソナ.md`を参照。
+「kaiwa_deck(会話デッキ)」は、TCG(トレーディングカードゲーム)の「デッキから1枚引く」というメタファーを応用した、就活の会話の練習用Webアプリ。面接の質問、逆質問、懇親会の話題をカードにして、ランダムに1枚引き、1人で声に出して答える練習をする。ランダムに引くのは、本番で何を聞かれるか分からない状況を再現するため。もとはアイスブレイク用(その場で相手と一緒に引く)だったが、相手の前でアプリを開く気まずさが大きいため見直した。背景と経緯は`docs/課題とペルソナ.md`を参照。
 
 ## アーキテクチャ
 
@@ -62,6 +62,7 @@ docker compose exec frontend npx tsc --noEmit    # 型チェック
 - **認証**: Supabase Auth(匿名認証+アカウント昇格)。バックエンドは認証情報を発行・保存せず、Supabase発行のJWTを検証して`user_id`を取得するだけ(`backend/app/core/security.py`の`get_current_user_id`依存関係)。このプロジェクトのトークンは**ES256(非対称鍵)署名**なので、旧来のHS256共有シークレットではなくJWKS(`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`)の公開鍵で検証する。JWKSの取得先はトークン内の`iss`ではなく設定値`SUPABASE_URL`に固定すること(トークンを信用して取得先を決めない)。**`user_id`や作成者idをリクエスト引数として受け取ってはならない** — 全エンドポイントで検証済みJWTから取得すること。これはAPI設計時に何度も指摘された規約で、ハンドラをコピペする際に混入しやすい退行なので特に注意
 - **DB**: Supabase Postgres。スキーマは`supabase/migrations/`配下の生SQL(`0001_init.sql`)を唯一の正とする — **Alembicは導入しない**。`backend/app/models/`のSQLAlchemyモデルはこのスキーマに追従する手書きの写像であり、スキーマの発生源ではない
 - **ホスティング方針**: Vercel(フロント) + Google Cloud Run(`min-instance=0`、バックエンド) + Supabase(DB/Auth)。無料/低コスト運用を狙った構成で、これには実装上の重要な帰結がある: Cloud Runインスタンスはリクエスト間でゼロにスケールダウンしうるため、**ゲーム/ルームの状態はバックエンドのプロセスメモリではなくDBに永続化する**こと
+  - 本番: Cloud Runのサービス`kaiwa-deck-api`(`asia-northeast1`、`--max-instances 2`)。`DATABASE_URL`はSecret Managerの`database-url`。GCPのプロジェクトが組織の下にあり、組織の制限で`--allow-unauthenticated`が使えないため、`--no-invoker-iam-check`で公開している。**手元と本番は同じSupabaseのDBを使う**ので、スキーマの変更は手元で試した時点で本番にも効く(古いバックエンドを壊さない、列の追加などから進める)
 - **ローカル開発**: Docker Compose(ローカルへのNode.js/Python個別インストールは前提としない)。`frontend`・`backend`の2サービスのみで、ローカルPostgresコンテナは無い(DBはクラウドのSupabaseプロジェクト)。frontendのベースイメージはNode 22 — `@supabase/supabase-js`がNode 20ではネイティブWebSocket未対応で`createClient()`時にクラッシュするため、下げないこと。backendのDB接続はSupabaseの**Shared pooler**を使う(Direct connectionはIPv6専用でコンテナから届かない)
 
 ## データモデル
@@ -87,7 +88,7 @@ docker compose exec frontend npx tsc --noEmit    # 型チェック
 
 `docs/開発計画.md`にフェーズ分けされたMVPの内訳がある。進み具合:
 
-- **完了**: DBスキーマ → JWT検証 → お題CRUD → デッキCRUD/deck_cards → ルーム/room_users → drawn・state → 上限・CORS → フロントの土台(認証、API呼び出し、hooks)→ M8のUI(LP、`/decks`、`/decks/[id]`)→ ルームのhooks
-- **いまここ: M9のうち「ひとりで引く」**(`/decks/[id]`の「ひとりで引く」ボタン、`/room/[id]`のドロー画面)。人間が実装中
-- **次**: M11(めくり演出、見た目の仕上げ)→ M12(デプロイ。本番の`CORS_ORIGINS`、レート制限、会話に出たシークレット(DBパスワード、旧JWT Secret)の再発行)
-- **公開のあと**: M9の残り(`/room/new`、「参加する」画面、招待リンク、参加者の表示)→ M10(WebSocketのリアルタイム共有。引くロジックのバグと同期のバグを同時にデバッグしないよう、意図的に最後に回した)
+- **完了**: DBスキーマ → JWT検証 → お題CRUD → デッキCRUD/deck_cards → ルーム/room_users → drawn・state → 上限・CORS → フロントの土台 → M8のUI → ルームのhooks → 「ひとりで引く」 → 見た目の仕上げ → デプロイ(Vercel、Cloud Run。DBパスワードは再発行済み)→ README
+- **いまここ: コンセプトの見直し**。①方向転換をdocsに残す → ②3つのデッキの質問を書く(人間) → ③お題に種類を持たせ、種類を選んでデッキを作れるようにする(Claude。DB・API・テスト・docs) → `DeckForm`の選択欄(人間) → 本番に反映
+- **後回し**: 「1タップで引く」入口、ドロー画面のタイマー、1枚だけ山札に戻すAPI(人間が一旦不要とした)、めくり演出、答えのメモ、録音
+- **公開のあと**: 友達と模擬面接(M9の残りのルーム画面 → M10のWebSocket。引くロジックのバグと同期のバグを同時にデバッグしないよう、意図的に最後に回した)、旧JWT Secretの再発行(先にフロントのキーをpublishable keyへ切り替える)、レート制限
