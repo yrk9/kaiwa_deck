@@ -1,17 +1,20 @@
 "use client";
 import { useCreateDeck } from "@/hooks/useDecks";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { CardCategory } from "@/types/api";
 
 export function DeckForm() {
   const { mutate, isPending, isError, error } = useCreateDeck();
   const router = useRouter();
   const [deckName, setDeckName] = useState<string>("");
-  const [isInclude, setIsInclude] = useState<boolean>(true);
+  const [selectedCategory, setSelectedCategory] = useState<CardCategory | "">(
+    "interview",
+  );
 
   // error は失敗すると自動で更新されるので、表示のたびにここで文言を決める
   const errorMessage =
@@ -23,7 +26,11 @@ export function DeckForm() {
     e.preventDefault();
 
     mutate(
-      { deck_name: deckName, include_official_cards: isInclude },
+      {
+        deck_name: deckName,
+        official_category:
+          selectedCategory === "" ? undefined : selectedCategory,
+      },
       { onSuccess: (newDeck) => router.push(`/decks/${newDeck.id}`) },
     );
   }
@@ -40,15 +47,20 @@ export function DeckForm() {
             className="flex-1"
           ></Input>
         </Label>
-        <Label className="flex items-center gap-2">
-          <span className="shrink-0">公式お題を入れる</span>
-          <input
-            name="include"
-            type="checkbox"
-            checked={isInclude}
-            className="accent-primary"
-            onChange={(e) => setIsInclude(e.target.checked)}
-          ></input>
+        <Label>
+          <span className="w-18 shrink-0">公式のお題</span>
+          <select
+            value={selectedCategory}
+            onChange={(e) =>
+              setSelectedCategory(e.target.value as CardCategory | "")
+            }
+            className="h-8 flex-1 rounded-lg border border-input bg-transparent px-2.5"
+          >
+            <option value="interview">面接の定番</option>
+            <option value="reverse_question">逆質問</option>
+            <option value="small_talk">懇親会の話題</option>
+            <option value="">入れない</option>
+          </select>
         </Label>
 
         <Button
