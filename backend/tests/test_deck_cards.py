@@ -88,7 +88,13 @@ def test_list_cards_in_deck(client, deck_and_card, session_factory):
     assert r.status_code == 200
     items = r.json()
     assert {c["id"] for c in items} == {str(official_id), str(own_id)}
-    assert set(items[0]) == {"id", "create_user_id", "content", "description"}
+    assert set(items[0]) == {
+        "id",
+        "create_user_id",
+        "content",
+        "description",
+        "category",
+    }
     contents = [c["content"] for c in items]
     assert contents == sorted(contents)
 

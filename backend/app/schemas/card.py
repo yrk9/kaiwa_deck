@@ -1,6 +1,10 @@
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+
+# 公式デッキの種類。DBのcheck制約(0002_card_category.sql)と同じ値にする
+CardCategory = Literal["interview", "reverse_question", "small_talk"]
 
 
 class CardIn(BaseModel):
@@ -19,3 +23,4 @@ class CardOut(BaseModel):
     create_user_id: UUID | None
     content: str
     description: str | None
+    category: CardCategory | None

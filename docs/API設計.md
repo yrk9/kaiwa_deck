@@ -26,19 +26,20 @@
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
 | 自分のデッキ一覧 | `GET /deck/` | なし(JWTから自分のuser_id) | `[{id, create_user_id, deck_name, card_count, created_at, updated_at}, ...]` |
-| デッキ作成 | `POST /deck/` | `デッキ名`、(任意)`include_official_cards` | `{id, create_user_id, deck_name, created_at, updated_at}` |
+| デッキ作成 | `POST /deck/` | `デッキ名`、(任意)`official_category`、(任意)`include_official_cards` | `{id, create_user_id, deck_name, created_at, updated_at}` |
 | デッキ削除 | `DELETE /deck/{id}/` | なし | 204 |
 | デッキ参照 | `GET /deck/{id}/` | なし | `{id, create_user_id, deck_name, created_at, updated_at}` |
 
 - 参照・更新・削除は作成者本人だけ(デッキには公開の仕組みが無いため、参照も含めて本人限定。他人のは403)
 - 使用中(ルームで使われている)のデッキは削除できず、409を返す
-- `include_official_cards`を`true`にすると、公式のお題をすべて入れた状態でデッキが作られる(初めての人が、1回のリクエストで最初のデッキを用意できるように)。省略時は`false`
+- `official_category`(`interview` / `reverse_question` / `small_talk`)を指定すると、その種類の公式のお題を入れた状態でデッキが作られる(初めての人が、1回のリクエストで最初のデッキを用意できるように)
+- `include_official_cards`を`true`にすると、公式のお題をすべて入れて作る。公開中の古いフロントのために残しており、フロントを新しくしたら外す。`official_category`と同時には指定できない(422)
 
 ## deck_cards(デッキとお題の中間テーブル)
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
-| デッキ内のお題一覧 | `GET /deck/{deck_id}/cards/` | なし | `[{id, create_user_id, content, description}, ...]` |
+| デッキ内のお題一覧 | `GET /deck/{deck_id}/cards/` | なし | `[{id, create_user_id, content, description, category}, ...]` |
 | お題を追加 | `POST /deck/{deck_id}/cards/` | `card_id` | `{deck_id, card_id}` |
 | お題を削除 | `DELETE /deck/{deck_id}/cards/{card_id}/` | なし | 204 |
 
@@ -78,11 +79,11 @@
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
-| お題一覧 | `GET /card/` | なし | `[{id, create_user_id, content, description}, ...]` |
-| お題作成 | `POST /card/` | `内容`, `補足` | `{id, create_user_id, content, description}` |
+| お題一覧 | `GET /card/` | なし | `[{id, create_user_id, content, description, category}, ...]` |
+| お題作成 | `POST /card/` | `内容`, `補足` | `{id, create_user_id, content, description, category}` |
 | お題削除 | `DELETE /card/{id}/` | なし | 204 |
-| お題参照 | `GET /card/{id}/` | なし | `{id, create_user_id, content, description}` |
-| お題編集 | `PUT /card/{id}/` | `内容`, `補足` | `{id, create_user_id, content, description}` |
+| お題参照 | `GET /card/{id}/` | なし | `{id, create_user_id, content, description, category}` |
+| お題編集 | `PUT /card/{id}/` | `内容`, `補足` | `{id, create_user_id, content, description, category}` |
 
 - どのルートもログイン必須(トークンが無いと401)。作成は201を返す
 - 参照は、ログインしていれば誰でもできる

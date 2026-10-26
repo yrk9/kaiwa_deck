@@ -1,11 +1,21 @@
 // APIのレスポンスと送る内容の形。docs/API設計.md と backend/app/schemas に対応する
 
+// 公式デッキの種類(面接の定番、逆質問、懇親会の話題)。backend/app/schemas/card.py と同じ値
+export const cardCategories = [
+  "interview",
+  "reverse_question",
+  "small_talk",
+] as const;
+export type CardCategory = (typeof cardCategories)[number];
+
 export type Card = {
   id: string;
   // 公式のお題は null
   create_user_id: string | null;
   content: string;
   description: string | null;
+  // 公式のお題だけが持つ。自分で作ったお題は null
+  category: CardCategory | null;
 };
 
 export type CardInput = {
@@ -28,7 +38,9 @@ export type DeckListItem = Deck & {
 
 export type DeckInput = {
   deck_name: string;
-  // true なら、公式のお題を全部入れた状態で作る
+  // 指定すると、その種類の公式のお題を入れた状態で作る
+  official_category?: CardCategory;
+  // true なら、公式のお題を全部入れて作る(古い使い方。official_category と同時には使えない)
   include_official_cards?: boolean;
 };
 
