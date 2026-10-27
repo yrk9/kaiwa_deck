@@ -15,10 +15,16 @@ type TopicCardProps = {
   description?: string | null;
   // 大きさなどを、使う側で変えるためのクラス(例: "w-40")
   className?: string;
+  showDescription?: boolean;
 };
 
 // お題カードの表
-export function TopicCard({ content, description, className }: TopicCardProps) {
+export function TopicCard({
+  content,
+  description,
+  className,
+  showDescription = true,
+}: TopicCardProps) {
   return (
     <div
       className={cn(
@@ -42,7 +48,7 @@ export function TopicCard({ content, description, className }: TopicCardProps) {
           </p>
         </div>
 
-        {description && (
+        {showDescription && description && (
           <p className="max-h-20 overflow-y-auto border-t pt-2 text-xs break-words text-muted-foreground">
             {description}
           </p>
