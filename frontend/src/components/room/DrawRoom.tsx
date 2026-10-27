@@ -103,6 +103,7 @@ export function DrawRoom() {
           <TopicCard
             content={latestCard.content}
             description={latestCard.description}
+            showDescription={true}
           />
         ) : (
           <TopicCardBack />

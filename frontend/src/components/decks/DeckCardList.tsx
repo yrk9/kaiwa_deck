@@ -152,15 +152,39 @@ export function DeckCardList() {
       {deckCardData.length === 0 ? (
         <div>お題がまだありません。追加してみましょう。</div>
       ) : (
-        <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
           {deckCardData.map((card) => {
             return (
-              <li key={card.id} className="relative  max-w-80">
-                <TopicCard
-                  content={card.content}
-                  description={card.description}
-                  className="w-full"
-                />
+              <li
+                key={card.id}
+                className="relative max-w-80 transition hover:-translate-y-0.5"
+              >
+                <Dialog>
+                  <DialogTrigger
+                    render={
+                      <button
+                        type="button"
+                        className="w-full text-left cursor-pointer"
+                      />
+                    }
+                  >
+                    <TopicCard
+                      content={card.content}
+                      className="w-full"
+                      showDescription={false}
+                    />
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="pr-8 leading-snug">
+                        {card.content}
+                      </DialogTitle>
+                      <DialogDescription>
+                        {card.description ?? "このお題には補足がありません"}
+                      </DialogDescription>
+                    </DialogHeader>
+                  </DialogContent>
+                </Dialog>
                 <div className="absolute top-0 right-0 z-1">
                   <Button
                     onClick={() => handleDeleteButton(card.id)}
