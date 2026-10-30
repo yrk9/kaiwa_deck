@@ -14,10 +14,9 @@ class Room(Base):
     room_create_user: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE")
     )
-    # ルームが使っているデッキは、削除できない(DBが止める)
-    deck_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("decks.id", ondelete="RESTRICT")
-    )
+    # ルームが使っているデッキは、削除できない(DBが止める)。
+    # restrictにしないのは、ユーザーを消すときにルームとデッキを一緒に消せるようにするため
+    deck_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("decks.id"))
     room_name: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
