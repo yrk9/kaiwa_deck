@@ -1,4 +1,7 @@
-import type { Session } from "@supabase/supabase-js";
+import {
+  isAuthImplicitGrantRedirectError,
+  type Session,
+} from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 
@@ -29,4 +32,45 @@ async function loadSession(): Promise<Session> {
     );
   }
   return signedIn.session;
+}
+
+// ゲストのまま、Googleアカウントをつなぐ。作ったデッキはそのまま引き継がれる
+// Googleの画面へ移動し、終わると今のページに戻ってくる
+export async function linkGoogle(): Promise<void> {
+  await ensureSession();
+  const { error } = await supabase.auth.linkIdentity({
+    provider: "google",
+    options: { redirectTo: window.location.href },
+  });
+  if (error) throw error;
+}
+
+// 登録済みの人が、Googleアカウントでログインする(別の端末で使うときなど)
+// その端末でゲストとして作ったものは、引き継がれない
+export async function signInWithGoogle(): Promise<void> {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.href },
+  });
+  if (error) throw error;
+}
+
+export async function signOut(): Promise<void> {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+// already_registered: つなごうとしたGoogleアカウントが、すでに別のユーザーで登録済み
+export type LoginRedirectError = "already_registered" | "failed";
+
+// Googleの画面から戻ってきたときの失敗を返す。失敗していなければ null
+export async function getLoginRedirectError(): Promise<LoginRedirectError | null> {
+  const { error } = await supabase.auth.initialize();
+  if (!isAuthImplicitGrantRedirectError(error)) return null;
+
+  // 再読み込みで同じ失敗を出さないよう、URLから取り除く
+  window.history.replaceState(null, "", window.location.pathname);
+  return error.details?.code === "identity_already_exists"
+    ? "already_registered"
+    : "failed";
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthButton } from "@/components/AuthButton";
 
 // 全ページ共通のヘッダー。幅は、layout.tsx の main と同じにして左端を揃える
 export function Header() {
@@ -8,13 +9,14 @@ export function Header() {
         <Link href="/" className="font-bold tracking-wide">
           Kaiwa Deck
         </Link>
-        <nav>
+        <nav className="flex items-center gap-4">
           <Link
             href="/decks"
             className="text-sm text-muted-foreground hover:text-foreground"
           >
             デッキ一覧
           </Link>
+          <AuthButton />
         </nav>
       </div>
     </header>
