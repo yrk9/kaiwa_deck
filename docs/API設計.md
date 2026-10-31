@@ -120,7 +120,7 @@
 
 ## ルーム入室時の集約API
 
-ルーム画面(`/room/[code]`)の初期表示に必要な情報(ルーム情報・参加者・山札の残り枚数・引かれたお題)を1回のリクエストにまとめる。山札の中身は返さず、残り枚数のみ返してネタバレを防ぐ。`remaining_card_count`は、デッキのお題のうち、まだ引かれていない枚数。見られるのは参加者だけ(参加者以外は403)。
+ルーム画面(`/room/[code]`)の初期表示に必要な情報(ルーム情報・参加者・山札の残り枚数・引かれたお題)を1回のリクエストにまとめる。山札の中身は返さず、残り枚数のみ返してネタバレを防ぐ。`remaining_card_count`は、デッキのお題のうち、まだ引かれていない枚数。見られるのは参加者だけ(参加者以外は403)。引かれたお題の`note`は、自分の想定回答のメモ(無ければnull)。他の参加者のメモは返さない。
 
 ```
 GET /room/{room_id}/state/
@@ -129,7 +129,7 @@ GET /room/{room_id}/state/
     room: {id, room_create_user, deck_id, room_name, created_at},
     participants: [{user_id, user_name, joined_at, last_seen_at}, ...],
     remaining_card_count: 0,
-    drawn: [{card_id, content, description, drawn_at}, ...]
+    drawn: [{card_id, content, description, drawn_at, note}, ...]
 }
 ```
 

@@ -4,7 +4,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import Card, DeckCard, Room, RoomDrawnCard
+from app.models import Card, CardNote, DeckCard, Room, RoomDrawnCard
 
 
 def _drawn_card_ids(room_id: UUID):
@@ -47,6 +47,23 @@ def list_drawn(db: Session, room_id: UUID) -> list[tuple[RoomDrawnCard, Card]]:
     stmt = (
         select(RoomDrawnCard, Card)
         .join(Card, Card.id == RoomDrawnCard.card_id)
+        .where(RoomDrawnCard.room_id == room_id)
+        .order_by(RoomDrawnCard.drawn_at)
+    )
+    return list(db.execute(stmt).all())
+
+
+def list_drawn_with_notes(
+    db: Session, room_id: UUID, user_id: UUID
+) -> list[tuple[RoomDrawnCard, Card, str | None]]:
+    # 自分のメモだけをつなげる。メモが無いお題はNoneになる
+    stmt = (
+        select(RoomDrawnCard, Card, CardNote.note)
+        .join(Card, Card.id == RoomDrawnCard.card_id)
+        .outerjoin(
+            CardNote,
+            (CardNote.card_id == Card.id) & (CardNote.user_id == user_id),
+        )
         .where(RoomDrawnCard.room_id == room_id)
         .order_by(RoomDrawnCard.drawn_at)
     )

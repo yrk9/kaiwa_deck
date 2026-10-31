@@ -101,5 +101,7 @@ export type RoomState = {
     content: string;
     description: string | null;
     drawn_at: string;
+    // 自分の想定回答のメモ。書いていなければ null
+    note: string | null;
   }[];
 };

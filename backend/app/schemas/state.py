@@ -18,6 +18,8 @@ class StateDrawn(BaseModel):
     content: str
     description: str | None
     drawn_at: datetime
+    # 自分の想定回答のメモ。他の参加者のメモは返さない
+    note: str | None
 
 
 class RoomStateOut(BaseModel):

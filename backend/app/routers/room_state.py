@@ -45,7 +45,10 @@ def read_state(
                 content=c.content,
                 description=c.description,
                 drawn_at=d.drawn_at,
+                note=note,
             )
-            for d, c in drawn_crud.list_drawn(db, room_id)
+            for d, c, note in drawn_crud.list_drawn_with_notes(
+                db, room_id, user_id
+            )
         ],
     )
