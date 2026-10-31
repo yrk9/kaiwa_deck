@@ -117,6 +117,8 @@ export function DeckCardList() {
         お題を引く
       </Button>
       {isRemoveError && errorRemoveMessage}
+      {isRoomError &&
+        "ルームを作成できませんでした。時間をおいて再度お試しください"}
       <div className="flex flex-row gap-2 pb-4">
         <Dialog>
           <DialogTrigger render={<Button variant="outline" />}>
@@ -150,9 +152,6 @@ export function DeckCardList() {
           </DialogContent>
         </Dialog>
       </div>
-
-      {isRoomError &&
-        "ルームを作成できませんでした。時間をおいて再度お試しください"}
 
       {deckCardData.length === 0 ? (
         <div>お題がまだありません。追加してみましょう。</div>
