@@ -71,27 +71,40 @@ export function CardPicker() {
 
   return (
     <div>
+      {isAddCardError && <p className="text-red-600">{errorAddMessage}</p>}
       {addableCards.length === 0 ? (
         <div>追加できるお題がありません。</div>
       ) : (
-        <ul>
+        <ul className="max-h-[60vh] overflow-y-auto">
           {addableCards.map((card) => {
             return (
-              <li key={card.id}>
-                {card.content}
-                {card.description && "説明:" + card.description}
+              <li
+                key={card.id}
+                className="flex items-center gap-3 border-b py-3 last:border-b-0"
+              >
+                <div className="flex-1">
+                  <p className="font-bold">{card.content}</p>
+                  {card.description && (
+                    <p className="text-xs text-muted-foreground">
+                      {card.description}
+                    </p>
+                  )}
+                </div>
+
                 <Button
                   onClick={() => handleAddButton(card.id)}
                   disabled={isAddCardPending}
+                  size={"sm"}
+                  variant={"outline"}
+                  className="mr-2"
                 >
-                  お題をデッキに追加
+                  追加
                 </Button>
               </li>
             );
           })}
         </ul>
       )}
-      {isAddCardError && errorAddMessage}
     </div>
   );
 }
