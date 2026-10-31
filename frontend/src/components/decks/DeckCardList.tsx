@@ -124,10 +124,8 @@ export function DeckCardList() {
                 公式のお題と、自分で作ったお題から選べます
               </DialogDescription>
             </DialogHeader>
-            {/* お題が多いので、一覧だけをスクロールさせる */}
-            <div className="max-h-[60vh] overflow-y-auto">
-              <CardPicker />
-            </div>
+
+            <CardPicker />
           </DialogContent>
         </Dialog>
 
