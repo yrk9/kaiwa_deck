@@ -107,13 +107,13 @@ export function DeckCardList() {
         <Button
           onClick={() =>
             mutateRoom(
-              { deck_id: id, room_name: "ひとりで引く" },
+              { deck_id: id, room_name: "カードを引く" },
               { onSuccess: (newRoom) => router.push(`/room/${newRoom.id}`) },
             )
           }
           disabled={isRoomPending || deckCardData.length === 0}
         >
-          ひとりで引く
+          お題を引く
         </Button>
         <Dialog>
           <DialogTrigger render={<Button />}>お題を追加</DialogTrigger>
@@ -155,7 +155,7 @@ export function DeckCardList() {
             return (
               <li
                 key={card.id}
-                className="relative max-w-80 transition hover:-translate-y-0.5"
+                className="relative max-w-80 transition hover:-translate-y-0.5 w-full mx-auto"
               >
                 <Dialog>
                   <DialogTrigger
