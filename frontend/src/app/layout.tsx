@@ -11,7 +11,7 @@ const notoSans = Noto_Sans_JP({
 
 export const metadata: Metadata = {
   title: "Kaiwa Deck",
-  description: "会話の一歩をカードから",
+  description: "1枚引いて練習しよう",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

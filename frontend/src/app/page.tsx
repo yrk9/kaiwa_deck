@@ -1,23 +1,27 @@
 import { StartButton } from "@/components/StartButton";
+import { HeroCards } from "@/components/HeroCards";
 
 export default function Home() {
   return (
     <div className="flex w-full flex-col items-center py-8 gap-12">
       {/* コンセプトの説明 */}
       <div className="flex flex-col gap-4">
-        <h1 className="text-4xl">会話の一歩をカードから</h1>
-        <p className="text-xl">
-          話題をカードに見立てて、アイスブレークをゲーム感覚で楽しめる
+        <h1 className="text-4xl font-bold tracking-tight text-center">
+          1枚引いて練習しよう
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          面接の質問をランダムに1枚引いて、声に出して答えてみましょう
         </p>
       </div>
-
+      <HeroCards />
       <div className="flex flex-col">
-        <h2 className="text-3xl py-4">遊び方</h2>
-        <ol className="list-decimal pl-5">
+        <h2 className="text-2xl font-bold py-4">使い方</h2>
+        <ol className="list-decimal pl-5 marker:font-bold marker:text-primary">
           <li className="pb-2">
-            デッキを作る(公式お題もあってシチュエーションに合わせてすぐに使える)
+            デッキを選ぶ：面接の定番・逆質問・懇親会の話題から選ぶ
           </li>
-          <li>カードを引く</li>
+          <li className="pb-2">1枚引く</li>
+          <li>声に出して答える</li>
         </ol>
       </div>
 
