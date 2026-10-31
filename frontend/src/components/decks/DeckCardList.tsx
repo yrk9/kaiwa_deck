@@ -103,20 +103,27 @@ export function DeckCardList() {
   return (
     <div>
       <h1 className="text-4xl py-2">{deckData.deck_name}</h1>
+      <Button
+        onClick={() =>
+          mutateRoom(
+            { deck_id: id, room_name: "カードを引く" },
+            { onSuccess: (newRoom) => router.push(`/room/${newRoom.id}`) },
+          )
+        }
+        disabled={isRoomPending || deckCardData.length === 0}
+        size="lg"
+        className="mb-4"
+      >
+        お題を引く
+      </Button>
+      {isRemoveError && errorRemoveMessage}
+      {isRoomError &&
+        "ルームを作成できませんでした。時間をおいて再度お試しください"}
       <div className="flex flex-row gap-2 pb-4">
-        <Button
-          onClick={() =>
-            mutateRoom(
-              { deck_id: id, room_name: "ひとりで引く" },
-              { onSuccess: (newRoom) => router.push(`/room/${newRoom.id}`) },
-            )
-          }
-          disabled={isRoomPending || deckCardData.length === 0}
-        >
-          ひとりで引く
-        </Button>
         <Dialog>
-          <DialogTrigger render={<Button />}>お題を追加</DialogTrigger>
+          <DialogTrigger render={<Button variant="outline" />}>
+            お題を追加
+          </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>お題を追加</DialogTitle>
@@ -131,10 +138,12 @@ export function DeckCardList() {
 
         <Dialog>
           {/* render で渡すと、ボタンの中にボタンが入らない */}
-          <DialogTrigger render={<Button />}>お題を作る</DialogTrigger>
+          <DialogTrigger render={<Button variant="outline" />}>
+            お題を作成
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>お題を作る</DialogTitle>
+              <DialogTitle>お題を作成</DialogTitle>
               <DialogDescription>
                 作ったお題は、「お題を追加」からデッキに入れられます
               </DialogDescription>
@@ -144,9 +153,6 @@ export function DeckCardList() {
         </Dialog>
       </div>
 
-      {isRoomError &&
-        "ルームを作成できませんでした。時間をおいて再度お試しください"}
-
       {deckCardData.length === 0 ? (
         <div>お題がまだありません。追加してみましょう。</div>
       ) : (
@@ -155,7 +161,7 @@ export function DeckCardList() {
             return (
               <li
                 key={card.id}
-                className="relative max-w-80 transition hover:-translate-y-0.5"
+                className="relative max-w-80 transition hover:-translate-y-0.5 w-full mx-auto"
               >
                 <Dialog>
                   <DialogTrigger
@@ -198,7 +204,6 @@ export function DeckCardList() {
           })}
         </ul>
       )}
-      {isRemoveError && errorRemoveMessage}
     </div>
   );
 }
