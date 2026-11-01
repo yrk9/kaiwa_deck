@@ -39,11 +39,12 @@
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
-| デッキ内のお題一覧 | `GET /deck/{deck_id}/cards/` | なし | `[{id, create_user_id, content, description, category}, ...]` |
+| デッキ内のお題一覧 | `GET /deck/{deck_id}/cards/` | なし | `[{id, create_user_id, content, description, category, note}, ...]` |
 | お題を追加 | `POST /deck/{deck_id}/cards/` | `card_id` | `{deck_id, card_id}` |
 | お題を削除 | `DELETE /deck/{deck_id}/cards/{card_id}/` | なし | 204 |
 
 - どれもデッキの持ち主だけ(他人のデッキは403、存在しないデッキは404)。一覧は、内容(`content`)の順
+- 一覧の`note`は、自分の想定回答のメモ(無ければnull)。デッキの編集画面でメモを書くため
 - 追加できるお題は、**公式のお題と自分で作ったお題だけ**。他人のお題は403(作成者があとから編集・削除しても、他人のデッキに影響しないようにするため)
 - 同じお題を同じデッキに2回追加すると409
 
