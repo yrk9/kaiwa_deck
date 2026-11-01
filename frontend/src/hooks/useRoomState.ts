@@ -6,7 +6,7 @@ import { roomGcTime, roomQueryKey } from "@/hooks/useRooms";
 import { api } from "@/lib/api";
 import type { DrawnCard, RoomState } from "@/types/api";
 
-const roomStateQueryKey = (roomId: string) =>
+export const roomStateQueryKey = (roomId: string) =>
   [...roomQueryKey(roomId), "state"] as const;
 
 // ルーム画面に必要な情報(ルーム・参加者・残り枚数・引いたお題)を、1回で取る

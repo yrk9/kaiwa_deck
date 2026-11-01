@@ -23,6 +23,13 @@ export type CardInput = {
   description?: string | null;
 };
 
+// お題ごとの、自分の想定回答のメモ
+export type CardNote = {
+  card_id: string;
+  note: string;
+  updated_at: string;
+};
+
 export type Deck = {
   id: string;
   create_user_id: string;
