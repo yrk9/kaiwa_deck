@@ -4,17 +4,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { decksQueryKey } from "@/hooks/useDecks";
 import { api } from "@/lib/api";
-import type { Card, DeckCard } from "@/types/api";
+import type { DeckCard, DeckCardItem } from "@/types/api";
+
+// ["deck-cards"] を取り直すと、すべてのデッキのお題一覧が最新になる
+export const allDeckCardsQueryKey = ["deck-cards"] as const;
 
 // デッキ内のお題を保存しておく名前(デッキごとに別)
 const deckCardsQueryKey = (deckId: string | undefined) =>
-  ["deck-cards", deckId] as const;
+  [...allDeckCardsQueryKey, deckId] as const;
 
-// デッキの中のお題の一覧。deckId が undefined の間は、取得しない
+// デッキの中のお題の一覧(自分のメモつき)。deckId が undefined の間は、取得しない
 export function useDeckCards(deckId: string | undefined) {
   return useQuery({
     queryKey: deckCardsQueryKey(deckId),
-    queryFn: () => api<Card[]>(`/deck/${deckId}/cards/`),
+    queryFn: () => api<DeckCardItem[]>(`/deck/${deckId}/cards/`),
     enabled: Boolean(deckId),
   });
 }

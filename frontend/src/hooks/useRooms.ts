@@ -6,9 +6,13 @@ import { api } from "@/lib/api";
 import { ensureSession } from "@/lib/auth";
 import type { Room, RoomInput, RoomMember, RoomUser } from "@/types/api";
 
+// ["rooms"] を取り直すと、すべてのルームのデータが最新になる
+export const allRoomsQueryKey = ["rooms"] as const;
+
 // ルームのデータを保存しておく名前(ルームごとに別)
 // ["rooms", id] を取り直すと、ルーム・参加者・state のすべてが最新になる
-export const roomQueryKey = (roomId: string) => ["rooms", roomId] as const;
+export const roomQueryKey = (roomId: string) =>
+  [...allRoomsQueryKey, roomId] as const;
 
 // ルームは他の人の操作でも変わるので、画面を離れたら保存したデータを捨てる
 export const roomGcTime = 0;

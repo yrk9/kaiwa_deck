@@ -56,6 +56,12 @@ export type DeckCard = {
   card_id: string;
 };
 
+// デッキ内のお題一覧の1件
+export type DeckCardItem = Card & {
+  // 自分の想定回答のメモ。書いていなければ null
+  note: string | null;
+};
+
 export type Room = {
   id: string;
   room_create_user: string;
