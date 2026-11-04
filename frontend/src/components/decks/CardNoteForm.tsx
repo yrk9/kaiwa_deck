@@ -12,6 +12,7 @@ type Props = {
 
 export function CardNoteForm({ id, initialNote }: Props) {
   const [text, setText] = useState(initialNote ?? "");
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const {
     mutate: saveNote,
     isPending: isSaving,
@@ -43,6 +44,7 @@ export function CardNoteForm({ id, initialNote }: Props) {
         onChange={(e) => {
           setText(e.target.value);
           reset();
+          resetDelete();
         }}
         className="max-h-60"
       ></Textarea>
@@ -51,25 +53,47 @@ export function CardNoteForm({ id, initialNote }: Props) {
       <div className="flex gap-2">
         <Button
           disabled={isSaving || text.trim() === ""}
-          onClick={() => saveNote({ cardId: id, note: text })}
+          onClick={() => {
+            resetDelete();
+            saveNote({ cardId: id, note: text });
+          }}
         >
           保存
         </Button>
-        {initialNote && (
-          <Button
-            onClick={() => {
-              deleteNote(id, {
-                onSuccess: () => {
-                  setText("");
-                  reset();
-                  resetDelete();
-                },
-              });
-            }}
-            disabled={isDeleting}
-          >
+        {/* メモは消すと戻せないので、押し間違えても消えないよう2段階にする */}
+        {initialNote && !isConfirmingDelete && (
+          <Button variant="outline" onClick={() => setIsConfirmingDelete(true)}>
             削除
           </Button>
+        )}
+        {initialNote && isConfirmingDelete && (
+          <>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                reset();
+                deleteNote(id, {
+                  onSuccess: () => {
+                    setText("");
+                    setIsConfirmingDelete(false);
+                  },
+                });
+              }}
+              disabled={isDeleting}
+            >
+              本当に削除
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetDelete();
+                setIsConfirmingDelete(false);
+              }}
+              disabled={isDeleting}
+            >
+              やめる
+            </Button>
+          </>
         )}
       </div>
     </div>
