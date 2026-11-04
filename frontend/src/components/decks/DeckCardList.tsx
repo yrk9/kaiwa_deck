@@ -16,6 +16,7 @@ import { CardPicker } from "@/components/decks/CardPicker";
 import { CardForm } from "@/components/decks/CardForm";
 import { useCreateRoom } from "@/hooks/useRooms";
 import { TopicCard } from "@/components/TopicCard";
+import { CardNoteForm } from "@/components/decks/CardNoteForm";
 
 export function DeckCardList() {
   const { id } = useParams<{ id: string }>();
@@ -187,6 +188,10 @@ export function DeckCardList() {
                         {card.description ?? "このお題には補足がありません"}
                       </DialogDescription>
                     </DialogHeader>
+                    <CardNoteForm
+                      id={card.id}
+                      initialNote={card.note}
+                    ></CardNoteForm>
                   </DialogContent>
                 </Dialog>
                 <div className="absolute top-0 right-0 z-1">
