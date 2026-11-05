@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { TopicCard, TopicCardBack } from "@/components/TopicCard";
+import { DrawnNote } from "@/components/room/DrawnNote";
 
 export function DrawRoom() {
   const { id } = useParams<{ id: string }>();
@@ -109,6 +110,11 @@ export function DrawRoom() {
           <TopicCardBack />
         )}
       </div>
+
+      {/* key: 次のカードを引いたら、閉じた状態に戻す */}
+      {latestCard !== undefined && (
+        <DrawnNote key={latestCard.card_id} note={latestCard.note} />
+      )}
 
       <div className="flex flex-col gap-2 w-full max-w-2xs">
         <Button
