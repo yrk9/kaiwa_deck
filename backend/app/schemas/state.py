@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from app.schemas.card import CardCategory
 from app.schemas.room import RoomOut
 
 
@@ -17,6 +18,7 @@ class StateDrawn(BaseModel):
     card_id: UUID
     content: str
     description: str | None
+    category: CardCategory | None
     drawn_at: datetime
     # 自分の想定回答のメモ。他の参加者のメモは返さない
     note: str | None

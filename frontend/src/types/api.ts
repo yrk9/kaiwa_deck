@@ -113,6 +113,8 @@ export type RoomState = {
     card_id: string;
     content: string;
     description: string | null;
+    // 公式のお題だけが持つ。自分で作ったお題は null
+    category: CardCategory | null;
     drawn_at: string;
     // 自分の想定回答のメモ。書いていなければ null
     note: string | null;
