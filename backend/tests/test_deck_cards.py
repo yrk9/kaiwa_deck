@@ -2,6 +2,7 @@
 
 確認していること:
 - 一覧は、そのデッキに入っているお題だけが、内容の順で出る(空なら[])
+- 一覧の各お題には、自分のメモだけが付く(他人のメモは出ず、無ければnull)
 - 追加(201)・削除(204)がAPI設計どおりの形で動く
 - デッキの持ち主以外は、一覧・追加・削除ができない(403)。これはデッキ自体の
   アクセス制御(test_decks.py)と同じ規約
@@ -26,7 +27,7 @@ from app.core.security import get_current_user_id
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app as api
-from app.models import Card, Deck, DeckCard
+from app.models import Card, CardNote, Deck, DeckCard
 
 USER_A = uuid.uuid4()
 USER_B = uuid.uuid4()
@@ -94,9 +95,26 @@ def test_list_cards_in_deck(client, deck_and_card, session_factory):
         "content",
         "description",
         "category",
+        "note",
     }
     contents = [c["content"] for c in items]
     assert contents == sorted(contents)
+
+
+def test_list_has_only_own_note(client, deck_and_card, session_factory):
+    deck_id, card_id = deck_and_card
+    client.post(f"/deck/{deck_id}/cards/", json={"card_id": str(card_id)})
+    with session_factory() as db:
+        db.add(CardNote(user_id=USER_B, card_id=card_id, note="Bのメモ"))
+        db.commit()
+
+    # 他人のメモしか無いうちは、自分にはnull
+    assert client.get(f"/deck/{deck_id}/cards/").json()[0]["note"] is None
+
+    with session_factory() as db:
+        db.add(CardNote(user_id=USER_A, card_id=card_id, note="Aのメモ"))
+        db.commit()
+    assert client.get(f"/deck/{deck_id}/cards/").json()[0]["note"] == "Aのメモ"
 
 
 def test_list_excludes_cards_of_other_decks(

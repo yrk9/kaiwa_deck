@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Card, DeckCard
+from app.models import Card, CardNote, DeckCard
 
 
 def get_deck_card(
@@ -18,14 +18,21 @@ def count_cards_in_deck(db: Session, deck_id: UUID) -> int:
     return db.execute(stmt).scalar_one()
 
 
-def list_cards_in_deck(db: Session, deck_id: UUID) -> list[Card]:
+def list_cards_in_deck(
+    db: Session, deck_id: UUID, user_id: UUID
+) -> list[tuple[Card, str | None]]:
+    # 自分のメモだけをつなげる。メモが無いお題はNoneになる
     stmt = (
-        select(Card)
+        select(Card, CardNote.note)
         .join(DeckCard, DeckCard.card_id == Card.id)
+        .outerjoin(
+            CardNote,
+            (CardNote.card_id == Card.id) & (CardNote.user_id == user_id),
+        )
         .where(DeckCard.deck_id == deck_id)
         .order_by(Card.content, Card.id)
     )
-    return list(db.scalars(stmt))
+    return list(db.execute(stmt).all())
 
 
 def add_card_to_deck(db: Session, deck_id: UUID, card_id: UUID) -> DeckCard:

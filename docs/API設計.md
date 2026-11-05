@@ -39,11 +39,12 @@
 
 | 操作 | メソッド/パス | 引数 | レスポンス |
 |---|---|---|---|
-| デッキ内のお題一覧 | `GET /deck/{deck_id}/cards/` | なし | `[{id, create_user_id, content, description, category}, ...]` |
+| デッキ内のお題一覧 | `GET /deck/{deck_id}/cards/` | なし | `[{id, create_user_id, content, description, category, note}, ...]` |
 | お題を追加 | `POST /deck/{deck_id}/cards/` | `card_id` | `{deck_id, card_id}` |
 | お題を削除 | `DELETE /deck/{deck_id}/cards/{card_id}/` | なし | 204 |
 
 - どれもデッキの持ち主だけ(他人のデッキは403、存在しないデッキは404)。一覧は、内容(`content`)の順
+- 一覧の`note`は、自分の想定回答のメモ(無ければnull)。デッキの編集画面でメモを書くため
 - 追加できるお題は、**公式のお題と自分で作ったお題だけ**。他人のお題は403(作成者があとから編集・削除しても、他人のデッキに影響しないようにするため)
 - 同じお題を同じデッキに2回追加すると409
 
@@ -91,6 +92,18 @@
 - 入力の上限は`content`が1〜200文字、`description`が500文字まで(超えると422)
 - 一覧に出るのは、公式のお題と自分のお題だけ(他人のお題は出ない)。公式が先、その中は内容(`content`)の順
 
+### 想定回答のメモ
+
+| 操作 | メソッド/パス | 引数 | レスポンス |
+|---|---|---|---|
+| メモを保存 | `PUT /card/{card_id}/note/` | `note` | `{card_id, note, updated_at}` |
+| メモを削除 | `DELETE /card/{card_id}/note/` | なし | 204 |
+
+- メモは自分だけのもの。1つのお題にメモは1つで、保存するたびに上書きする(無ければ作る)
+- どのお題にもメモを付けられる(お題の参照は誰でもできるため)。存在しないお題は404
+- `note`は1〜2000文字(前後の空白は除く。超えたり空だったりすると422)。消すときはDELETEを使う
+- メモが無いお題のメモを削除しようとすると404
+
 ## ルームの進行(引いたお題の記録)
 
 `テーブル.txt`の当初の方針(引いた記録は不要、フロントで管理)から転換。Cloud Run(min-instance=0)構成ではインスタンスがスケールダウンしうるため、進行状態をDBに永続化する。
@@ -108,7 +121,7 @@
 
 ## ルーム入室時の集約API
 
-ルーム画面(`/room/[code]`)の初期表示に必要な情報(ルーム情報・参加者・山札の残り枚数・引かれたお題)を1回のリクエストにまとめる。山札の中身は返さず、残り枚数のみ返してネタバレを防ぐ。`remaining_card_count`は、デッキのお題のうち、まだ引かれていない枚数。見られるのは参加者だけ(参加者以外は403)。
+ルーム画面(`/room/[code]`)の初期表示に必要な情報(ルーム情報・参加者・山札の残り枚数・引かれたお題)を1回のリクエストにまとめる。山札の中身は返さず、残り枚数のみ返してネタバレを防ぐ。`remaining_card_count`は、デッキのお題のうち、まだ引かれていない枚数。見られるのは参加者だけ(参加者以外は403)。引かれたお題の`note`は、自分の想定回答のメモ(無ければnull)。他の参加者のメモは返さない。
 
 ```
 GET /room/{room_id}/state/
@@ -117,7 +130,7 @@ GET /room/{room_id}/state/
     room: {id, room_create_user, deck_id, room_name, created_at},
     participants: [{user_id, user_name, joined_at, last_seen_at}, ...],
     remaining_card_count: 0,
-    drawn: [{card_id, content, description, drawn_at}, ...]
+    drawn: [{card_id, content, description, drawn_at, note}, ...]
 }
 ```
 

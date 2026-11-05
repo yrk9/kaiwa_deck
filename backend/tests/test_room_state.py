@@ -6,6 +6,7 @@
 - 参加者はuser_nameつきで、参加が早い順。引いたお題は、引いた順でcontentつき
 - remaining_card_countは、引くと減り、リセットすると元に戻る
 - まだ引かれていないお題の中身は、レスポンスのどこにも出てこない(ネタバレ防止)
+- 引いたお題には自分のメモだけがつき、メモが無いお題はnull。他の参加者のメモは出ない
 - 参加者以外は403、存在しないルームは404、ログインが無いと401
 
 確認していないこと:
@@ -26,6 +27,7 @@ from app.db.session import get_db
 from app.main import app as api
 from app.models import (
     Card,
+    CardNote,
     Deck,
     DeckCard,
     Room,
@@ -151,7 +153,13 @@ def test_state_shape_and_content(client, room_id, session_factory):
     drawn = state["drawn"]
     assert [d["content"] for d in drawn] == ["お題0", "お題1"]
     assert drawn[0]["description"] == "補足0"
-    assert set(drawn[0]) == {"card_id", "content", "description", "drawn_at"}
+    assert set(drawn[0]) == {
+        "card_id",
+        "content",
+        "description",
+        "drawn_at",
+        "note",
+    }
     assert state["remaining_card_count"] == 1
 
 
@@ -182,6 +190,32 @@ def test_undrawn_cards_are_not_leaked(client, room_id, session_factory):
     assert "お題2" not in text
     assert "補足1" not in text
     assert "補足2" not in text
+
+
+def test_drawn_has_only_own_note(client, room_id, session_factory):
+    # 「お題0」「お題1」を引き、お題0にはAとBが、お題1にはBだけがメモを書く
+    with session_factory() as db:
+        card0, card1 = db.query(Card).order_by(Card.content).limit(2).all()
+        for i, card in enumerate((card0, card1)):
+            db.add(
+                RoomDrawnCard(
+                    room_id=room_id,
+                    card_id=card.id,
+                    drawn_at=OLD_TIME + timedelta(minutes=i),
+                )
+            )
+        db.add_all(
+            [
+                CardNote(user_id=USER_A, card_id=card0.id, note="Aのメモ"),
+                CardNote(user_id=USER_B, card_id=card0.id, note="Bのメモ0"),
+                CardNote(user_id=USER_B, card_id=card1.id, note="Bのメモ1"),
+            ]
+        )
+        db.commit()
+
+    r = get_state(client, room_id)
+    assert [d["note"] for d in r.json()["drawn"]] == ["Aのメモ", None]
+    assert "Bのメモ" not in r.text
 
 
 def test_non_member_gets_403(client, room_id):

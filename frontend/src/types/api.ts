@@ -23,6 +23,13 @@ export type CardInput = {
   description?: string | null;
 };
 
+// お題ごとの、自分の想定回答のメモ
+export type CardNote = {
+  card_id: string;
+  note: string;
+  updated_at: string;
+};
+
 export type Deck = {
   id: string;
   create_user_id: string;
@@ -47,6 +54,12 @@ export type DeckInput = {
 export type DeckCard = {
   deck_id: string;
   card_id: string;
+};
+
+// デッキ内のお題一覧の1件
+export type DeckCardItem = Card & {
+  // 自分の想定回答のメモ。書いていなければ null
+  note: string | null;
 };
 
 export type Room = {
@@ -101,5 +114,7 @@ export type RoomState = {
     content: string;
     description: string | null;
     drawn_at: string;
+    // 自分の想定回答のメモ。書いていなければ null
+    note: string | null;
   }[];
 };

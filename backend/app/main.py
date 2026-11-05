@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.routers import (
+    card_notes,
     cards,
     deck_cards,
     decks,
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(cards.router)
+app.include_router(card_notes.router)
 app.include_router(decks.router)
 app.include_router(deck_cards.router)
 app.include_router(rooms.router)
