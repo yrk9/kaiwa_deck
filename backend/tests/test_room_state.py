@@ -6,6 +6,7 @@
 - 参加者はuser_nameつきで、参加が早い順。引いたお題は、引いた順でcontentつき
 - remaining_card_countは、引くと減り、リセットすると元に戻る
 - まだ引かれていないお題の中身は、レスポンスのどこにも出てこない(ネタバレ防止)
+- 引いたお題には種類(category)がつき、種類が無いお題はnull
 - 引いたお題には自分のメモだけがつき、メモが無いお題はnull。他の参加者のメモは出ない
 - 参加者以外は403、存在しないルームは404、ログインが無いと401
 
@@ -157,10 +158,30 @@ def test_state_shape_and_content(client, room_id, session_factory):
         "card_id",
         "content",
         "description",
+        "category",
         "drawn_at",
         "note",
     }
     assert state["remaining_card_count"] == 1
+
+
+def test_drawn_has_category(client, room_id, session_factory):
+    # 「お題0」は公式の面接のお題にし、「お題1」は種類なしのまま引く
+    with session_factory() as db:
+        card0, card1 = db.query(Card).order_by(Card.content).limit(2).all()
+        card0.category = "interview"
+        for i, card in enumerate((card0, card1)):
+            db.add(
+                RoomDrawnCard(
+                    room_id=room_id,
+                    card_id=card.id,
+                    drawn_at=OLD_TIME + timedelta(minutes=i),
+                )
+            )
+        db.commit()
+
+    drawn = get_state(client, room_id).json()["drawn"]
+    assert [d["category"] for d in drawn] == ["interview", None]
 
 
 def test_remaining_count_goes_down_and_resets(client, room_id):

@@ -44,6 +44,7 @@ def read_state(
                 card_id=d.card_id,
                 content=c.content,
                 description=c.description,
+                category=c.category,
                 drawn_at=d.drawn_at,
                 note=note,
             )
