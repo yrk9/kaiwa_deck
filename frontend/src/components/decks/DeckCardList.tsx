@@ -146,7 +146,7 @@ export function DeckCardList() {
             <DialogHeader>
               <DialogTitle>お題を作成</DialogTitle>
               <DialogDescription>
-                作ったお題は、「お題を追加」からデッキに入れられます
+                作ったお題は、このデッキにそのまま追加できます
               </DialogDescription>
             </DialogHeader>
             <CardForm />

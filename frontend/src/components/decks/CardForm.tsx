@@ -1,6 +1,8 @@
 "use client";
 import { useCreateCard } from "@/hooks/useCards";
+import { useAddCardToDeck } from "@/hooks/useDeckCards";
 import React, { useState } from "react";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +10,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
 
 export function CardForm() {
+  const { id } = useParams<{ id: string }>();
   const [content, setContent] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const { mutate, isPending, isError, isSuccess, error } = useCreateCard();
+  const {
+    mutate: addToDeck,
+    isPending: isAdding,
+    isSuccess: isAddSuccess,
+    error: addError,
+    reset: resetAdd,
+  } = useAddCardToDeck(id);
   let errorMessage;
+  let addErrorMessage;
 
   if (error instanceof ApiError && error.status === 409) {
     errorMessage = "作れるお題の上限(200件)に達しました";
@@ -21,18 +32,35 @@ export function CardForm() {
     errorMessage = "お題を作成できませんでした";
   }
 
-  function handleSubmit(e: React.SubmitEvent) {
-    e.preventDefault();
+  // お題は作れているので、「お題を追加」から入れ直せる
+  if (addError instanceof ApiError && addError.status === 409) {
+    addErrorMessage =
+      "お題は作成しましたが、デッキの上限のため追加できませんでした";
+  } else if (addError) {
+    addErrorMessage =
+      "お題は作成しましたが、デッキに追加できませんでした。「お題を追加」から追加してください";
+  }
+
+  function createCard(addAfterCreate: boolean) {
+    resetAdd();
     mutate(
       { content, description: description === "" ? null : description },
       {
-        onSuccess: () => {
+        onSuccess: (card) => {
           setContent("");
           setDescription("");
+          if (addAfterCreate) addToDeck(card.id);
         },
       },
     );
   }
+
+  function handleSubmit(e: React.SubmitEvent) {
+    e.preventDefault();
+    createCard(true);
+  }
+
+  const isBusy = isPending || isAdding;
 
   return (
     <div>
@@ -61,19 +89,35 @@ export function CardForm() {
           />
         </Label>
 
-        <Button
-          type="submit"
-          disabled={isPending || content.trim() === ""}
-          className="w-full"
-        >
-          {isPending ? "作成中" : "作成する"}
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            type="submit"
+            disabled={isBusy || content.trim() === ""}
+            className="w-full"
+          >
+            {isBusy ? "作成中" : "作成してデッキに追加"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => createCard(false)}
+            disabled={isBusy || content.trim() === ""}
+            className="w-full"
+          >
+            作成だけする
+          </Button>
+        </div>
       </form>
       {isError && errorMessage}
+      {addErrorMessage && (
+        <p className="pt-2 text-sm text-red-600">{addErrorMessage}</p>
+      )}
       {/* 次のお題を入力し始めたら消す */}
-      {isSuccess && content === "" && (
+      {isSuccess && !isAdding && !addErrorMessage && content === "" && (
         <p role="status" className="pt-2 text-sm text-muted-foreground">
-          お題を作成しました
+          {isAddSuccess
+            ? "お題を作成し、デッキに追加しました"
+            : "お題を作成しました"}
         </p>
       )}
     </div>

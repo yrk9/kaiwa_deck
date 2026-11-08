@@ -5,6 +5,7 @@ import { useAddCardToDeck, useDeckCards } from "@/hooks/useDeckCards";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
+import type { Card } from "@/types/api";
 
 export function CardPicker() {
   const { id } = useParams<{ id: string }>();
@@ -68,6 +69,45 @@ export function CardPicker() {
   const addableCards = cardData.filter(
     (card) => !deckCardData.some((deckCard) => deckCard.id === card.id),
   );
+  // 公式のお題は create_user_id が null
+  const myCards = addableCards.filter((card) => card.create_user_id !== null);
+  const officialCards = addableCards.filter(
+    (card) => card.create_user_id === null,
+  );
+
+  function renderCardList(cards: Card[]) {
+    return (
+      <ul>
+        {cards.map((card) => {
+          return (
+            <li
+              key={card.id}
+              className="flex items-center gap-3 border-b py-3 last:border-b-0"
+            >
+              <div className="flex-1">
+                <p className="font-bold">{card.content}</p>
+                {card.description && (
+                  <p className="text-xs text-muted-foreground">
+                    {card.description}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                onClick={() => handleAddButton(card.id)}
+                disabled={isAddCardPending}
+                size={"sm"}
+                variant={"outline"}
+                className="mr-2"
+              >
+                追加
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
 
   return (
     <div>
@@ -75,35 +115,20 @@ export function CardPicker() {
       {addableCards.length === 0 ? (
         <div>追加できるお題がありません。</div>
       ) : (
-        <ul className="max-h-[60vh] overflow-y-auto">
-          {addableCards.map((card) => {
-            return (
-              <li
-                key={card.id}
-                className="flex items-center gap-3 border-b py-3 last:border-b-0"
-              >
-                <div className="flex-1">
-                  <p className="font-bold">{card.content}</p>
-                  {card.description && (
-                    <p className="text-xs text-muted-foreground">
-                      {card.description}
-                    </p>
-                  )}
-                </div>
-
-                <Button
-                  onClick={() => handleAddButton(card.id)}
-                  disabled={isAddCardPending}
-                  size={"sm"}
-                  variant={"outline"}
-                  className="mr-2"
-                >
-                  追加
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
+          {myCards.length > 0 && (
+            <section>
+              <h3 className="font-bold text-muted-foreground">自分のお題</h3>
+              {renderCardList(myCards)}
+            </section>
+          )}
+          {officialCards.length > 0 && (
+            <section>
+              <h3 className="font-bold text-muted-foreground">公式のお題</h3>
+              {renderCardList(officialCards)}
+            </section>
+          )}
+        </div>
       )}
     </div>
   );
