@@ -3,7 +3,11 @@ import { useDecks } from "@/hooks/useDecks";
 import Link from "next/link";
 import { DeleteDeckButton } from "@/components/decks/DeleteDeckButton";
 
-export function DeckList() {
+type Props = {
+  isEditing: boolean;
+};
+
+export function DeckList({ isEditing }: Props) {
   const { data, isPending, isError } = useDecks();
 
   if (isPending) {
@@ -30,10 +34,14 @@ export function DeckList() {
     <ul className="grid grid-cols-1 gap-4">
       {data.map((deck) => {
         return (
-          <li key={deck.id} className="flex items-center gap-2">
+          // 枠は li に付ける。ボタンを Link の中に入れないため
+          <li
+            key={deck.id}
+            className={`flex items-center gap-2 rounded-xl border bg-card transition hover:shadow-md ${isEditing ? "pr-4" : ""}`}
+          >
             <Link
               href={`/decks/${deck.id}`}
-              className="flex flex-1 min-w-0 items-center justify-between gap-2 rounded-xl border bg-card p-4 transition hover:shadow-md"
+              className="flex flex-1 min-w-0 items-center justify-between gap-2 p-4"
             >
               <span className="font-bold truncate min-w-0">
                 {deck.deck_name}
@@ -42,7 +50,9 @@ export function DeckList() {
                 {deck.card_count}枚
               </span>
             </Link>
-            <DeleteDeckButton deckId={deck.id} deckName={deck.deck_name} />
+            {isEditing && (
+              <DeleteDeckButton deckId={deck.id} deckName={deck.deck_name} />
+            )}
           </li>
         );
       })}
