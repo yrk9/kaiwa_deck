@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Card, Deck, DeckCard, Room
@@ -48,11 +48,25 @@ def list_decks_with_card_count(
     return list(db.execute(stmt).all())
 
 
-def is_deck_in_use(db: Session, deck_id: UUID) -> bool:
-    stmt = select(Room.id).where(Room.deck_id == deck_id).limit(1)
+def is_deck_used_by_others_room(db: Session, deck: Deck) -> bool:
+    stmt = (
+        select(Room.id)
+        .where(
+            Room.deck_id == deck.id,
+            Room.room_create_user != deck.create_user_id,
+        )
+        .limit(1)
+    )
     return db.execute(stmt).first() is not None
 
 
 def delete_deck(db: Session, deck: Deck) -> None:
+    # 「ひとりで引く」で作った自分のルームは、閉じる手段が無いので一緒に消す
+    db.execute(
+        delete(Room).where(
+            Room.deck_id == deck.id,
+            Room.room_create_user == deck.create_user_id,
+        )
+    )
     db.delete(deck)
     db.commit()

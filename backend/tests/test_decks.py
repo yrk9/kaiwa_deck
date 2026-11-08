@@ -9,12 +9,15 @@
   省略・falseなら空のデッキ。真偽値でない値は422
 - official_categoryを指定すると、その種類の公式のお題だけが入る。
   知らない種類や、include_official_cardsとの同時の指定は422
-- ルームが使っているデッキは削除できず409。ルームが無くなれば削除できる
+- デッキを削除すると、そのデッキを使う自分のルームも消える(別のデッキのルームは残る)
+- 他人のルームが使っているデッキは削除できず409(自分のルームも消さない)。
+  そのルームが無くなれば削除できる
 - 存在しないidは404、空や長すぎる入力は422
 - ログイン(トークン)が無いと、どのルートも401
 
 確認していないこと:
-- 本物のDB(Postgres)での動作。ここではメモリ上のSQLiteを使う
+- 本物のDB(Postgres)での動作。ここではメモリ上のSQLiteを使う。
+  ルームを消したときに参加者・引いた記録も消えるのはDBの設定なので、ここでは見ていない
 - デッキへのお題の追加・削除そのもの(別のテストで扱う)
 """
 import uuid
@@ -217,24 +220,45 @@ def test_owner_can_delete(client):
     assert client.get(f"/deck/{deck['id']}/").status_code == 404
 
 
-def test_cannot_delete_deck_used_by_room(client, session_factory):
-    deck = create(client).json()
+def make_room(session_factory, creator_id, deck_id):
     with session_factory() as db:
         room = Room(
-            room_create_user=USER_A,
-            deck_id=uuid.UUID(deck["id"]),
-            room_name="使用中",
+            room_create_user=creator_id,
+            deck_id=uuid.UUID(deck_id),
+            room_name="ルーム",
         )
         db.add(room)
         db.commit()
-        room_id = room.id
+        return room.id
+
+
+def test_delete_deck_also_deletes_own_rooms(client, session_factory):
+    deck = create(client).json()
+    other_deck = create(client, {"deck_name": "別のデッキ"}).json()
+    room_id = make_room(session_factory, USER_A, deck["id"])
+    other_room_id = make_room(session_factory, USER_A, other_deck["id"])
+
+    assert client.delete(f"/deck/{deck['id']}/").status_code == 204
+    with session_factory() as db:
+        assert db.get(Room, room_id) is None
+        # 別のデッキのルームは残る
+        assert db.get(Room, other_room_id) is not None
+
+
+def test_cannot_delete_deck_used_by_others_room(client, session_factory):
+    deck = create(client).json()
+    own_room_id = make_room(session_factory, USER_A, deck["id"])
+    others_room_id = make_room(session_factory, USER_B, deck["id"])
 
     assert client.delete(f"/deck/{deck['id']}/").status_code == 409
     assert client.get(f"/deck/{deck['id']}/").status_code == 200
-
-    # ルームが無くなれば、削除できる
+    # 断ったときは、自分のルームも消さない
     with session_factory() as db:
-        db.delete(db.get(Room, room_id))
+        assert db.get(Room, own_room_id) is not None
+
+    # 他人のルームが無くなれば、削除できる
+    with session_factory() as db:
+        db.delete(db.get(Room, others_room_id))
         db.commit()
     assert client.delete(f"/deck/{deck['id']}/").status_code == 204
 
