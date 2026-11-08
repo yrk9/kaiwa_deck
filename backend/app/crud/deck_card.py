@@ -30,7 +30,8 @@ def list_cards_in_deck(
             (CardNote.card_id == Card.id) & (CardNote.user_id == user_id),
         )
         .where(DeckCard.deck_id == deck_id)
-        .order_by(Card.content, Card.id)
+        # デッキを作ったときに入れた公式のお題は日時が同じなので、内容の順になる
+        .order_by(DeckCard.added_at, Card.content, Card.id)
     )
     return list(db.execute(stmt).all())
 
