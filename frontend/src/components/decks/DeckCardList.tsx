@@ -15,8 +15,7 @@ import { ApiError } from "@/lib/api";
 import { CardPicker } from "@/components/decks/CardPicker";
 import { CardForm } from "@/components/decks/CardForm";
 import { useCreateRoom } from "@/hooks/useRooms";
-import { TopicCard } from "@/components/TopicCard";
-import { CardNoteForm } from "@/components/decks/CardNoteForm";
+import { CardNoteDialog } from "@/components/decks/CardNoteDialog";
 
 export function DeckCardList() {
   const { id } = useParams<{ id: string }>();
@@ -164,36 +163,7 @@ export function DeckCardList() {
                 key={card.id}
                 className="relative max-w-80 transition hover:-translate-y-0.5 w-full mx-auto"
               >
-                <Dialog>
-                  <DialogTrigger
-                    render={
-                      <button
-                        type="button"
-                        className="w-full text-left cursor-pointer"
-                      />
-                    }
-                  >
-                    <TopicCard
-                      content={card.content}
-                      className="w-full"
-                      showDescription={false}
-                    />
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle className="pr-8 leading-snug">
-                        {card.content}
-                      </DialogTitle>
-                      <DialogDescription>
-                        {card.description ?? "このお題には補足がありません"}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <CardNoteForm
-                      id={card.id}
-                      initialNote={card.note}
-                    ></CardNoteForm>
-                  </DialogContent>
-                </Dialog>
+                <CardNoteDialog card={card} />
                 <div className="absolute top-0 right-0 z-1">
                   <Button
                     onClick={() => handleDeleteButton(card.id)}
