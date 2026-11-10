@@ -42,9 +42,13 @@ def list_cards(
     _get_own_deck(db, deck_id, user_id)
     return [
         DeckCardItem(
-            **CardOut.model_validate(card).model_dump(), note=note
+            **CardOut.model_validate(card).model_dump(),
+            note=note,
+            deck_count=deck_count,
         )
-        for card, note in crud.list_cards_in_deck(db, deck_id, user_id)
+        for card, note, deck_count in crud.list_cards_in_deck(
+            db, deck_id, user_id
+        )
     ]
 
 

@@ -1,9 +1,9 @@
 from uuid import UUID
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
-from app.models import Card, CardNote, DeckCard
+from app.models import Card, CardNote, Deck, DeckCard
 
 
 def get_deck_card(
@@ -20,10 +20,19 @@ def count_cards_in_deck(db: Session, deck_id: UUID) -> int:
 
 def list_cards_in_deck(
     db: Session, deck_id: UUID, user_id: UUID
-) -> list[tuple[Card, str | None]]:
+) -> list[tuple[Card, str | None, int]]:
+    # 公式のお題は他人のデッキにも入るので、自分のデッキだけを数える
+    other = aliased(DeckCard)
+    deck_count = (
+        select(func.count())
+        .select_from(other)
+        .join(Deck, Deck.id == other.deck_id)
+        .where(other.card_id == Card.id, Deck.create_user_id == user_id)
+        .scalar_subquery()
+    )
     # 自分のメモだけをつなげる。メモが無いお題はNoneになる
     stmt = (
-        select(Card, CardNote.note)
+        select(Card, CardNote.note, deck_count)
         .join(DeckCard, DeckCard.card_id == Card.id)
         .outerjoin(
             CardNote,
