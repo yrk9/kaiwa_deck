@@ -60,6 +60,8 @@ export type DeckCard = {
 export type DeckCardItem = Card & {
   // 自分の想定回答のメモ。書いていなければ null
   note: string | null;
+  // このお題が入っている自分のデッキの数(このデッキも含む)
+  deck_count: number;
 };
 
 export type Room = {

@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { allDeckCardsQueryKey } from "@/hooks/useDeckCards";
+import { allRoomsQueryKey } from "@/hooks/useRooms";
 import { api } from "@/lib/api";
 import type { Card, CardInput } from "@/types/api";
 
@@ -25,5 +27,23 @@ export function useCreateCard() {
     mutationFn: (input: CardInput) =>
       api<Card>("/card/", { method: "POST", body: input }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: cardsQueryKey }),
+  });
+}
+
+// 自分のお題の内容を書き換える。mutate({ cardId, input }) で呼ぶ
+// description を省くと、補足は消える(上書きなので、残すなら今の値を渡す)
+// 403: 公式のお題、または他人のお題 / 404: お題が無い / 422: 文字数オーバー
+export function useUpdateCard() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ cardId, input }: { cardId: string; input: CardInput }) =>
+      api<Card>(`/card/${cardId}/`, { method: "PUT", body: input }),
+    // お題の内容は、お題一覧・デッキのお題一覧・ルームの state に入っている
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: cardsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: allDeckCardsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: allRoomsQueryKey }),
+      ]),
   });
 }
