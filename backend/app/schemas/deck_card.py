@@ -18,3 +18,5 @@ class DeckCardItem(CardOut):
     """デッキ内のお題一覧の1件。自分の想定回答のメモつき。"""
 
     note: str | None
+    # このお題が入っている自分のデッキの数(このデッキも含む)
+    deck_count: int

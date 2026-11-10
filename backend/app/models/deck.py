@@ -30,7 +30,7 @@ class Deck(Base):
 
 
 class DeckCard(Base):
-    """デッキとお題の中間テーブル。並び順は管理しない(テーブル設計.md参照)。"""
+    """デッキとお題の中間テーブル(テーブル設計.md参照)。"""
 
     __tablename__ = "deck_cards"
 
@@ -39,6 +39,10 @@ class DeckCard(Base):
     )
     card_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("cards.id", ondelete="CASCADE"), primary_key=True
+    )
+    # 一覧をデッキに入れた順に並べるために使う
+    added_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
     )
 
     deck: Mapped["Deck"] = relationship(back_populates="cards")

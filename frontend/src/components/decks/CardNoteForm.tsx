@@ -1,18 +1,26 @@
 "use client";
 import { Textarea } from "@/components/ui/textarea";
 import { useDeleteCardNote, useSaveCardNote } from "@/hooks/useCardNotes";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
 
 type Props = {
   id: string;
   initialNote: string | null;
+  // 保存していない変更があるかを、親(ダイアログ)に伝える
+  onDirtyChange?: (isDirty: boolean) => void;
 };
 
-export function CardNoteForm({ id, initialNote }: Props) {
+export function CardNoteForm({ id, initialNote, onDirtyChange }: Props) {
   const [text, setText] = useState(initialNote ?? "");
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  // 保存するときに前後の空白が消えるので、空白を除いて比べる
+  const isDirty = text.trim() !== (initialNote ?? "").trim();
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
   const {
     mutate: saveNote,
     isPending: isSaving,

@@ -4,7 +4,6 @@ import { useAddCardToDeck } from "@/hooks/useDeckCards";
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
@@ -65,9 +64,9 @@ export function CardForm() {
   return (
     <div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Label>
-          <span className="w-18 shrink-0">内容</span>
-          <Input
+        <Label className="items-start">
+          <span className="w-18 shrink-0 pt-2">内容</span>
+          <Textarea
             name="content"
             value={content}
             onChange={(e) => setContent(e.target.value)}

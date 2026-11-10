@@ -1,8 +1,10 @@
 """デッキへのお題の追加・削除(/deck/{deck_id}/cards)のテスト。
 
 確認していること:
-- 一覧は、そのデッキに入っているお題だけが、内容の順で出る(空なら[])
+- 一覧は、そのデッキに入っているお題だけが出る(空なら[])
+- 一覧は、デッキに入れた順。入れた日時が同じお題どうしは、内容の順
 - 一覧の各お題には、自分のメモだけが付く(他人のメモは出ず、無ければnull)
+- 一覧の各お題のdeck_countは、そのお題が入っている自分のデッキの数(他人のデッキは数えない)
 - 追加(201)・削除(204)がAPI設計どおりの形で動く
 - デッキの持ち主以外は、一覧・追加・削除ができない(403)。これはデッキ自体の
   アクセス制御(test_decks.py)と同じ規約
@@ -16,6 +18,7 @@
 - 本物のDB(Postgres)での動作。ここではメモリ上のSQLiteを使う
 """
 import uuid
+from datetime import datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -96,9 +99,48 @@ def test_list_cards_in_deck(client, deck_and_card, session_factory):
         "description",
         "category",
         "note",
+        "deck_count",
     }
-    contents = [c["content"] for c in items]
-    assert contents == sorted(contents)
+
+
+def test_deck_count_counts_only_own_decks(
+    client, deck_and_card, session_factory
+):
+    deck_id, card_id = deck_and_card
+    with session_factory() as db:
+        own_deck = Deck(create_user_id=USER_A, deck_name="自分の別のデッキ")
+        others_deck = Deck(create_user_id=USER_B, deck_name="他人のデッキ")
+        db.add_all([own_deck, others_deck])
+        db.flush()
+        for deck in (deck_id, own_deck.id, others_deck.id):
+            db.add(DeckCard(deck_id=deck, card_id=card_id))
+        db.commit()
+
+    items = client.get(f"/deck/{deck_id}/cards/").json()
+    # このデッキと自分の別のデッキの2つ。他人のデッキは数えない
+    assert items[0]["deck_count"] == 2
+
+
+def test_list_is_in_added_order(client, deck_and_card, session_factory):
+    deck_id, _ = deck_and_card
+    # SQLiteの日時は秒までなので、入れた日時は手で決める
+    added = [
+        ("ん", datetime(2026, 1, 1, tzinfo=timezone.utc)),
+        ("い", datetime(2026, 1, 1, tzinfo=timezone.utc)),
+        ("あ", datetime(2026, 1, 2, tzinfo=timezone.utc)),
+    ]
+    with session_factory() as db:
+        for content, added_at in added:
+            card = Card(content=content)
+            db.add(card)
+            db.flush()
+            db.add(
+                DeckCard(deck_id=deck_id, card_id=card.id, added_at=added_at)
+            )
+        db.commit()
+
+    items = client.get(f"/deck/{deck_id}/cards/").json()
+    assert [c["content"] for c in items] == ["い", "ん", "あ"]
 
 
 def test_list_has_only_own_note(client, deck_and_card, session_factory):

@@ -77,8 +77,9 @@ def delete_deck(
     db: Session = Depends(get_db),
 ):
     deck = _get_own_deck(db, deck_id, user_id)
-    # DBも止めるが、500エラーにならないよう先に409で断る
-    if crud.is_deck_in_use(db, deck.id):
+    # 自分のルームは一緒に消すが、他人のルームは消せないので断る
+    # (DBも止めるが、500エラーにならないよう先に409で断る)
+    if crud.is_deck_used_by_others_room(db, deck):
         raise HTTPException(
             status.HTTP_409_CONFLICT, "Deck is in use by a room"
         )
